@@ -5,6 +5,14 @@
   "version": "0.8.0",
   "publisher": "RizulSharma",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rizulsharma-2003/running-device.git"
+  },
+  "homepage": "https://github.com/rizulsharma-2003/running-device#readme",
+  "bugs": {
+    "url": "https://github.com/rizulsharma-2003/running-device/issues"
+  },
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#3F4FE0",
@@ -371,7 +379,7 @@
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview",
-    "package": "npm run typecheck && node esbuild.mjs --production && vsce package --allow-missing-repository",
+    "package": "npm run typecheck && node esbuild.mjs --production && vsce package",
     "vscode:prepublish": "node esbuild.mjs --production",
     "build-ios-helper": "sh scripts/build-ios-helper.sh"
   },
