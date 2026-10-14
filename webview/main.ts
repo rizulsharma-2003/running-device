@@ -15,9 +15,8 @@ const toggle = $<HTMLButtonElement>('toggle');
 const canvas = $<HTMLCanvasElement>('screen');
 const stage = $<HTMLElement>('stage');
 const frame = $<HTMLDivElement>('device-frame');
-const rail = document.querySelector<HTMLElement>('.rail')!;
-const layoutEl = $<HTMLDivElement>('layout');
-const dock = document.querySelector<HTMLElement>('.dock')!;
+const controls = $<HTMLElement>('controls');
+const handle = $<HTMLDivElement>('handle');
 const skeletonText = $<HTMLSpanElement>('skeleton-text');
 const card = $<HTMLElement>('card');
 const cardTitle = $<HTMLHeadingElement>('card-title');
@@ -47,6 +46,7 @@ const renderer = new VideoRenderer(
     state.hasFrame = true;
     render();
     canvas.focus();
+    if (body.classList.contains('controls-overlay')) reveal(2500);
   },
   () => send({ type: 'requestKeyFrame' }),
 );
@@ -277,43 +277,127 @@ document.querySelector('.topbar')!.addEventListener('click', (e) => {
 
 // ---- device frame sizing ----
 
-/**
- * Fits the phone (screen + bezel) into the space left by the dock and rail,
- * keeping the video's aspect ratio. Bezel and corner radius scale with size.
- */
-const RAIL_GAP = 12;
+const PAD = 14;
+const GAP = 12;
+const HANDLE = 22;
 
-function layout() {
-  body.classList.toggle('narrow', body.clientWidth < 340);
-  if (body.dataset.view !== 'device') return;
-  const narrow = body.classList.contains('narrow');
-  const cs = getComputedStyle(stage);
-  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-  const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-  const railSpace = narrow ? 0 : rail.offsetWidth + RAIL_GAP;
-  const availW = stage.clientWidth - padX - railSpace;
-  const availH = stage.clientHeight - padY - dock.offsetHeight - 14 - (narrow ? rail.offsetHeight + 10 : 0);
+type ControlsMode = 'side' | 'below' | 'overlay';
+
+/** Size of the control bar in one orientation (measured, since it depends on font and theme). */
+function measureControls(orient: 'h' | 'v') {
+  controls.dataset.orient = orient;
+  return { w: controls.offsetWidth, h: controls.offsetHeight };
+}
+
+/** Largest phone (screen + bezel, video aspect ratio) that fits in w × h. */
+function fitPhone(w: number, h: number) {
   const aspect = video.width && video.height ? video.width / video.height : 9 / 19.5;
-
   let bezel = 9;
   let screenW = 0;
   let screenH = 0;
   for (let i = 0; i < 2; i++) {
-    screenH = Math.max(60, Math.min(availH - 2 * bezel, (availW - 2 * bezel) / aspect));
+    screenH = Math.max(60, Math.min(h - 2 * bezel, (w - 2 * bezel) / aspect));
     screenW = screenH * aspect;
     bezel = Math.round(Math.min(11, Math.max(5, Math.min(screenW, screenH) * 0.035)));
   }
-  const screenRadius = Math.round(Math.min(screenW, screenH) * 0.085);
-  // Center the phone itself (not phone + rail) when there's room for a balancing column.
-  const outerW = screenW + 2 * bezel;
-  body.classList.toggle('centered', !narrow && availW - outerW >= railSpace);
-  layoutEl.style.setProperty('--rail-w', `${rail.offsetWidth}px`);
-  frame.style.width = `${Math.round(screenW + 2 * bezel)}px`;
-  frame.style.height = `${Math.round(screenH + 2 * bezel)}px`;
-  frame.style.setProperty('--bezel', `${bezel}px`);
-  frame.style.setProperty('--screen-radius', `${screenRadius}px`);
-  frame.style.setProperty('--frame-radius', `${screenRadius + bezel}px`);
+  return { screenW, screenH, bezel, w: screenW + 2 * bezel, h: screenH + 2 * bezel };
 }
+
+/**
+ * The screen gets all the room. The controls only use space the phone can't:
+ * beside it, below it, or, when there's none, an auto-hiding bar over the bottom edge.
+ */
+function layout() {
+  body.classList.toggle('narrow', body.clientWidth < 340);
+  if (body.dataset.view !== 'device') return;
+  const W = stage.clientWidth;
+  const H = stage.clientHeight;
+  const availW = W - 2 * PAD;
+  const availH = H - 2 * PAD;
+  const v = measureControls('v');
+  const hz = measureControls('h');
+
+  let phone = fitPhone(availW, availH);
+  const spareX = availW - phone.w;
+  const spareY = availH - phone.h;
+  let mode: ControlsMode;
+  let x: number;
+  let y: number;
+  let cx: number;
+  let cy: number;
+  let orient: 'h' | 'v' = 'h';
+  let scale = 1;
+
+  if (spareX >= v.w + GAP && v.h <= availH) {
+    // Beside: keep the phone centered if both sides have room, else shift it left a little.
+    mode = 'side';
+    orient = 'v';
+    const group = spareX >= 2 * (v.w + GAP) ? phone.w : phone.w + GAP + v.w;
+    x = PAD + (availW - group) / 2;
+    y = PAD + (availH - phone.h) / 2;
+    cx = x + phone.w + GAP;
+    cy = y + (phone.h - v.h) / 2;
+  } else if (spareY >= hz.h + GAP) {
+    mode = 'below';
+    x = PAD + (availW - phone.w) / 2;
+    y = PAD + (availH - phone.h - GAP - hz.h) / 2;
+    scale = Math.min(1, availW / hz.w);
+    cx = PAD + (availW - hz.w) / 2;
+    cy = y + phone.h + GAP;
+  } else {
+    // No spare room: give up only a thin strip for the handle.
+    mode = 'overlay';
+    phone = fitPhone(availW, availH - HANDLE + PAD / 2);
+    x = PAD + (availW - phone.w) / 2;
+    y = PAD + (availH - HANDLE + PAD / 2 - phone.h) / 2;
+    scale = Math.min(1, (W - 16) / hz.w);
+    cx = (W - hz.w) / 2;
+    cy = y + phone.h - hz.h - Math.max(10, phone.bezel + 10);
+  }
+
+  const screenRadius = Math.round(Math.min(phone.screenW, phone.screenH) * 0.085);
+  frame.style.left = `${Math.round(x)}px`;
+  frame.style.top = `${Math.round(y)}px`;
+  frame.style.width = `${Math.round(phone.w)}px`;
+  frame.style.height = `${Math.round(phone.h)}px`;
+  frame.style.setProperty('--bezel', `${phone.bezel}px`);
+  frame.style.setProperty('--screen-radius', `${screenRadius}px`);
+  frame.style.setProperty('--frame-radius', `${screenRadius + phone.bezel}px`);
+
+  controls.dataset.orient = orient;
+  controls.style.left = `${Math.round(cx)}px`;
+  controls.style.top = `${Math.round(cy)}px`;
+  controls.style.scale = String(scale);
+  for (const b of controls.querySelectorAll<HTMLElement>('[data-tip]')) {
+    b.dataset.tipSide = orient === 'v' ? 'left' : 'top';
+  }
+  body.classList.toggle('controls-overlay', mode === 'overlay');
+}
+
+// ---- auto-hide for the overlay control bar ----
+
+let hideTimer: number | undefined;
+
+function reveal(ms?: number) {
+  clearTimeout(hideTimer);
+  body.classList.add('reveal');
+  if (ms) {
+    hideTimer = window.setTimeout(() => body.classList.remove('reveal'), ms);
+  }
+}
+
+function scheduleHide(ms = 700) {
+  clearTimeout(hideTimer);
+  hideTimer = window.setTimeout(() => body.classList.remove('reveal'), ms);
+}
+
+handle.addEventListener('pointerenter', () => reveal());
+handle.addEventListener('click', () => reveal(4000));
+controls.addEventListener('pointerenter', () => body.classList.contains('controls-overlay') && reveal());
+controls.addEventListener('pointerleave', () => body.classList.contains('controls-overlay') && scheduleHide());
+handle.addEventListener('pointerleave', (e) => {
+  if (!controls.contains(e.relatedTarget as Node)) scheduleHide();
+});
 
 new ResizeObserver(() => layout()).observe(body);
 
@@ -406,7 +490,7 @@ stage.addEventListener('drop', async (e) => {
 
 // ---- device buttons: press on pointerdown, release on pointerup so long-press works ----
 
-for (const container of [dock, rail]) {
+for (const container of [controls]) {
   container.addEventListener('pointerdown', (e) => {
     const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-button]');
     if (!target || !state.activeId || !state.surfaceActive) {

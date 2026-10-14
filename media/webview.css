@@ -330,17 +330,21 @@ body.narrow .power-toggle {
 
 /* ───────────── stage & device ───────────── */
 
+/* The script sizes the phone to the whole stage first, then places the
+   controls only where there's spare room (or behind an auto-hide handle). */
 #stage {
   position: relative;
   flex: 1;
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 18px 14px 16px;
+  padding: 14px;
   overflow: hidden;
 }
 
-#stage > * {
+#stage > .glow,
+#stage > .card,
+#stage > .drop-hint {
   grid-area: 1 / 1;
 }
 
@@ -365,39 +369,17 @@ body.vscode-light.live .glow {
   opacity: 0.22;
 }
 
-.device-layout {
-  display: grid;
-  grid-template-areas:
-    'device rail'
-    'dock   .';
-  align-items: center;
-  justify-items: center;
-  gap: 14px 12px;
-}
-
-body.centered .device-layout {
-  grid-template-columns: var(--rail-w) auto var(--rail-w);
-  grid-template-areas:
-    '. device rail'
-    '. dock   .';
-}
-
-body.narrow .device-layout {
-  grid-template-areas:
-    'device'
-    'dock'
-    'rail';
-  gap: 10px;
-}
-
-body[data-view='card'] .device-layout {
+body[data-view='card'] .device,
+body[data-view='card'] .controls,
+body[data-view='card'] .handle {
   display: none;
 }
 
-/* The phone: a dark bezel whose size and radius are set from script to fit the panel. */
+/* The phone: a dark bezel whose size, radius and position are set from script. */
 .device {
-  grid-area: device;
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 240px;
   height: 520px;
   padding: var(--bezel, 9px);
@@ -409,7 +391,6 @@ body[data-view='card'] .device-layout {
     0 0 0 1px rgba(0, 0, 0, 0.35),
     0 28px 60px -22px rgba(0, 0, 0, 0.6),
     0 12px 24px -14px rgba(0, 0, 0, 0.45);
-  transition: box-shadow 0.3s var(--ease);
 }
 
 body.vscode-light .device {
@@ -473,65 +454,109 @@ body[data-view='device']:not(.live) .skeleton {
   animation: spin 0.8s linear infinite;
 }
 
-/* ───────────── dock & rail ───────────── */
+/* ───────────── device controls ───────────── */
 
-.dock,
-.rail {
+.controls {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
+  gap: 2px;
   padding: 4px;
   border: 1px solid var(--hairline);
-  background: var(--glass);
-  backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: var(--shadow-float);
-  transition: opacity 0.2s var(--ease);
-}
-
-.dock {
-  grid-area: dock;
-  gap: 6px;
   border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: var(--shadow-float);
+  transform-origin: center bottom;
+  transition: opacity 0.2s var(--ease), translate 0.25s var(--ease);
 }
 
-.dock .btn {
-  width: 36px;
+.controls .group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.controls .btn {
+  width: 32px;
   height: 32px;
   border-radius: 999px;
 }
 
-.rail {
-  grid-area: rail;
-  flex-direction: column;
-  gap: 2px;
-  border-radius: 14px;
-}
-
-.rail-sep {
-  width: 16px;
-  height: 1px;
-  margin: 3px 0;
+.controls .sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
   background: var(--hairline);
 }
 
-body.narrow .rail {
-  flex-direction: row;
-  border-radius: 999px;
+.controls[data-orient='v'] {
+  flex-direction: column;
+  border-radius: 18px;
+  transform-origin: left center;
 }
 
-body.narrow .rail-sep {
-  width: 1px;
-  height: 16px;
-  margin: 0 3px;
+.controls[data-orient='v'] .group {
+  flex-direction: column;
 }
 
-body.narrow .rail .btn {
-  border-radius: 999px;
+.controls[data-orient='v'] .sep {
+  width: 16px;
+  height: 1px;
+  margin: 4px 0;
 }
 
-body:not(.live) .dock,
-body:not(.live) .rail {
+body:not(.live) .controls {
   opacity: 0.4;
   pointer-events: none;
+}
+
+/* No spare room: the bar floats over the bottom of the screen and hides until wanted. */
+body.controls-overlay .controls {
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+body.controls-overlay:not(.reveal) .controls {
+  opacity: 0;
+  translate: 0 12px;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  display: none;
+  place-items: center;
+  cursor: pointer;
+}
+
+.handle span {
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--fg) 28%, transparent);
+  transition: background 0.15s, width 0.2s var(--ease);
+}
+
+.handle:hover span {
+  width: 52px;
+  background: color-mix(in srgb, var(--fg) 50%, transparent);
+}
+
+body.controls-overlay.live .handle {
+  display: grid;
+}
+
+body.controls-overlay.reveal .handle span {
+  opacity: 0;
 }
 
 /* ───────────── overlays ───────────── */
@@ -752,14 +777,6 @@ body:not(.live) .rail {
 
 [data-tip-side='left']:hover::after {
   transform: translate(0, -50%);
-}
-
-body.narrow .rail [data-tip-side='left']::after {
-  right: auto;
-  top: auto;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translate(-50%, 0);
 }
 
 /* ───────────── motion ───────────── */

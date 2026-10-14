@@ -72,29 +72,34 @@ export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: 
 
   <main id="stage">
     <div class="glow" aria-hidden="true"></div>
-    <div class="device-layout" id="layout">
-      <div class="device" id="device-frame">
-        <canvas id="screen" tabindex="0" aria-label="Device screen"></canvas>
-        <div class="skeleton" aria-hidden="true">
-          <span class="spinner"></span>
-          <span id="skeleton-text" class="skeleton-text"></span>
-        </div>
-        <div id="stats" class="stats" hidden></div>
+    <div class="device" id="device-frame">
+      <canvas id="screen" tabindex="0" aria-label="Device screen"></canvas>
+      <div class="skeleton" aria-hidden="true">
+        <span class="spinner"></span>
+        <span id="skeleton-text" class="skeleton-text"></span>
       </div>
-      <nav class="rail" aria-label="Hardware buttons">
-        ${deviceButton('volumeUp', 'Volume up', 'volumeUp', 'left')}
-        ${deviceButton('volumeDown', 'Volume down', 'volumeDown', 'left')}
-        <span class="rail-sep"></span>
-        ${deviceButton('power', 'Power · hold for menu', 'power', 'left')}
-        ${deviceButton('rotate', 'Rotate', 'rotate', 'left')}
-        ${deviceButton('notifications', 'Notifications', 'notifications', 'left')}
-      </nav>
-      <nav class="dock" aria-label="Navigation">
+      <div id="stats" class="stats" hidden></div>
+    </div>
+
+    <nav class="controls" id="controls" data-orient="h" aria-label="Device controls">
+      <div class="group">
         ${deviceButton('back', 'Back · Esc', 'back', 'top')}
         ${deviceButton('home', 'Home', 'home', 'top')}
         ${deviceButton('recents', 'Overview', 'recents', 'top')}
-      </nav>
-    </div>
+      </div>
+      <span class="sep"></span>
+      <div class="group">
+        ${deviceButton('volumeDown', 'Volume down', 'volumeDown', 'top')}
+        ${deviceButton('volumeUp', 'Volume up', 'volumeUp', 'top')}
+      </div>
+      <span class="sep"></span>
+      <div class="group">
+        ${deviceButton('power', 'Power · hold for menu', 'power', 'top')}
+        ${deviceButton('rotate', 'Rotate', 'rotate', 'top')}
+        ${deviceButton('notifications', 'Notifications', 'notifications', 'top')}
+      </div>
+    </nav>
+    <div class="handle" id="handle" aria-hidden="true"><span></span></div>
 
     <section id="card" class="card" hidden>
       ${HERO}
