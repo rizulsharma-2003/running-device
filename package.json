@@ -1,0 +1,127 @@
+{
+  "name": "running-devices",
+  "displayName": "Running Devices",
+  "description": "Mirror and control connected Android devices inside VS Code, like Android Studio's Running Devices window.",
+  "version": "0.1.0",
+  "publisher": "insideedge",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "android",
+    "adb",
+    "mirror",
+    "scrcpy",
+    "device"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "runningDevices",
+          "title": "Running Devices",
+          "icon": "media/device.svg"
+        }
+      ]
+    },
+    "views": {
+      "runningDevices": [
+        {
+          "type": "webview",
+          "id": "runningDevices.view",
+          "name": "Device"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "runningDevices.refresh",
+        "title": "Refresh Devices",
+        "category": "Running Devices",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "runningDevices.stop",
+        "title": "Stop Mirroring",
+        "category": "Running Devices",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "runningDevices.show",
+        "title": "Show Running Devices",
+        "category": "Running Devices"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "runningDevices.refresh",
+          "when": "view == runningDevices.view",
+          "group": "navigation@1"
+        },
+        {
+          "command": "runningDevices.stop",
+          "when": "view == runningDevices.view && runningDevices.mirroring",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Running Devices",
+      "properties": {
+        "runningDevices.adbPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the adb executable. Leave empty to auto-detect from ANDROID_HOME, ANDROID_SDK_ROOT, the default SDK location, or PATH."
+        },
+        "runningDevices.maxSize": {
+          "type": "number",
+          "default": 1600,
+          "minimum": 0,
+          "description": "Limit the longer side of the mirrored video, in pixels. 0 means the device's native resolution."
+        },
+        "runningDevices.bitRate": {
+          "type": "number",
+          "default": 8000000,
+          "description": "Video bit rate in bits per second."
+        },
+        "runningDevices.maxFps": {
+          "type": "number",
+          "default": 60,
+          "description": "Maximum frame rate of the mirrored video."
+        },
+        "runningDevices.stayAwake": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep the device awake while it is plugged in and being mirrored."
+        },
+        "runningDevices.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start mirroring automatically when exactly one device is connected."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "fetch-server": "node scripts/fetch-scrcpy-server.mjs",
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview",
+    "package": "npm run typecheck && node esbuild.mjs --production && vsce package",
+    "vscode:prepublish": "node esbuild.mjs --production"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}

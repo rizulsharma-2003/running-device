@@ -1,0 +1,11 @@
+.vscode/**
+node_modules/**
+src/**
+shared/**
+webview/**
+scripts/**
+dist/smoke-test.js
+**/*.map
+**/tsconfig.json
+esbuild.mjs
+.gitignore
