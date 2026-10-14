@@ -1,6 +1,6 @@
 # Running Devices
 
-See and control your Android phone right inside VS Code, the same way Android Studio's **Running Devices** window works. Plug in a device, open the panel, and its screen appears next to your code. Tap, swipe, scroll and type with your mouse and keyboard.
+See and control your Android phone right inside VS Code. Plug in a device, open the panel, and its live screen appears next to your code. Tap, swipe, scroll and type with your mouse and keyboard.
 
 No app to install on the phone, and no root.
 
@@ -31,7 +31,7 @@ Use the buttons in the panel's title bar:
 
 - **Pop Out to Window** opens the device in its own floating window, which you can place on another monitor.
 - **Open in Editor Tab** shows it as a tab, so you can split it next to your code.
-- **Move View…** (under **⋯**) moves the panel to the Secondary Side Bar (on the right, like Android Studio), the bottom Panel, or back.
+- **Move View…** (under **⋯**) moves the panel to the Secondary Side Bar (to keep the device on the right of your code), the bottom Panel, or back.
 
 Only one place shows the live screen at a time. The others show a **Show here** button to bring it back. Switching doesn't reconnect to the device.
 
@@ -51,7 +51,7 @@ The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** 
 
 ## Requirements
 
-- **adb** from the Android SDK Platform-Tools. It's found automatically if Android Studio is installed, or if `adb` is on your `PATH`. Otherwise set `runningDevices.adbPath`.
+- **adb** from the Android SDK Platform-Tools. It's found automatically if the Android SDK is installed in its default location, or if `adb` is on your `PATH`. Otherwise set `runningDevices.adbPath`.
 - Android 5.0 or newer.
 
 ## Settings

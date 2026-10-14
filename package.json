@@ -1,7 +1,7 @@
 {
   "name": "running-devices",
   "displayName": "Running Devices",
-  "description": "Mirror and control your Android device inside VS Code, like Android Studio's Running Devices window.",
+  "description": "Mirror, control, record and debug your Android device right inside VS Code.",
   "version": "0.3.0",
   "publisher": "RizulSharma",
   "license": "MIT",
