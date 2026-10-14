@@ -183,7 +183,7 @@ export class WdaManager {
 
 /** A running WDA for one device, plus the translation from mirror input to iOS gestures. */
 export class DeviceControl {
-  private proc: ChildProcess;
+  private proc: ChildProcess | null = null;
   private server: { close(): void } | null = null;
   private wda: WdaClient | null = null;
   private ready_: Promise<DeviceControl>;
@@ -200,24 +200,69 @@ export class DeviceControl {
 
   constructor(
     private readonly udid: string,
-    xctestrun: string,
+    private readonly xctestrun: string,
     private readonly log: (line: string) => void,
   ) {
-    this.proc = spawn('xcodebuild', ['test-without-building', '-xctestrun', xctestrun, '-destination', `id=${udid}`]);
-    this.ready_ = this.connect();
+    this.ready_ = this.start();
   }
 
   whenReady() {
     return this.ready_;
   }
 
-  private connect(): Promise<DeviceControl> {
+  private async start(): Promise<DeviceControl> {
+    // A runner may already be up (e.g. from a previous window): just connect to it.
+    if (await this.attach().catch(() => false)) {
+      this.log('iPhone touch control: reusing the running WebDriverAgent');
+      return this;
+    }
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 3 && !this.closed; attempt++) {
+      try {
+        return await this.launch();
+      } catch (err) {
+        lastError = err;
+        // Locked / untrusted need the user; anything else is often a runner still shutting down.
+        if (err instanceof WdaSetupError && (err.kind === 'locked' || err.kind === 'untrusted')) throw err;
+        this.log(`iPhone touch control: launch attempt ${attempt} failed (${err instanceof Error ? err.message : err}); retrying`);
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  }
+
+  /** Connects to WDA on the device over USB. Resolves false if nothing answers. */
+  private async attach(): Promise<boolean> {
+    const deviceId = await findDevice(this.udid);
+    if (deviceId === null) throw new Error('iPhone not found on USB');
+    const fwd = await forwardPort(deviceId, WDA_PORT);
+    const wda = new WdaClient(`http://127.0.0.1:${fwd.port}`);
+    if (!(await wda.status())) {
+      fwd.server.close();
+      return false;
+    }
+    await wda.start();
+    this.size = await wda.windowSize();
+    this.server = fwd.server;
+    this.wda = wda;
+    this.ready = true;
+    this.closed = false;
+    this.log(`iPhone touch control ready (${this.size.width}×${this.size.height} pt)`);
+    return true;
+  }
+
+  private launch(): Promise<DeviceControl> {
+    const proc = spawn('xcodebuild', ['test-without-building', '-xctestrun', this.xctestrun, '-destination', `id=${this.udid}`]);
+    this.proc = proc;
     return new Promise((resolve, reject) => {
       let output = '';
+      let settled = false;
       const timer = setTimeout(() => fail(new WdaSetupError('WebDriverAgent did not start within 90 seconds.', 'launch')), 90_000);
       const fail = (err: Error) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
-        this.dispose();
+        proc.kill();
         reject(err);
       };
       const onData = async (d: Buffer) => {
@@ -233,32 +278,27 @@ export class DeviceControl {
             ),
           );
         }
-        if (!this.ready && /ServerURLHere->/.test(output)) {
-          this.proc.stdout?.off('data', onData);
-          this.proc.stderr?.off('data', onData);
+        if (!settled && /ServerURLHere->/.test(output)) {
+          proc.stdout?.off('data', onData);
+          proc.stderr?.off('data', onData);
           try {
-            const deviceId = await findDevice(this.udid);
-            if (deviceId === null) throw new Error('iPhone not found on USB');
-            const fwd = await forwardPort(deviceId, WDA_PORT);
-            this.server = fwd.server;
-            this.wda = new WdaClient(`http://127.0.0.1:${fwd.port}`);
-            await this.wda.start();
-            this.size = await this.wda.windowSize();
-            this.ready = true;
+            if (!(await this.attach())) throw new Error('WebDriverAgent started but is not answering over USB');
+            settled = true;
             clearTimeout(timer);
-            this.log(`iPhone touch control ready (${this.size.width}×${this.size.height} pt)`);
             resolve(this);
           } catch (err) {
             fail(err instanceof Error ? err : new Error(String(err)));
           }
         }
       };
-      this.proc.stdout?.on('data', onData);
-      this.proc.stderr?.on('data', onData);
-      this.proc.on('exit', () => {
-        if (!this.ready) fail(new WdaSetupError(output.split('\n').filter((l) => /error/i.test(l)).slice(-2).join(' ') || 'WebDriverAgent stopped.', 'launch'));
-        this.closed = true;
-        this.ready = false;
+      proc.stdout?.on('data', onData);
+      proc.stderr?.on('data', onData);
+      proc.on('exit', () => {
+        if (!settled) fail(new WdaSetupError(launchFailureReason(output), 'launch'));
+        if (this.proc === proc) {
+          this.ready = false;
+          this.closed = true;
+        }
       });
     });
   }
@@ -393,6 +433,15 @@ export class DeviceControl {
     this.closed = true;
     this.ready = false;
     this.server?.close();
-    this.proc.kill();
+    this.proc?.kill();
   }
+}
+
+/** The human-readable reason from xcodebuild's noisy output. */
+function launchFailureReason(output: string): string {
+  const lines = output.split('\n').map((l) => l.trim());
+  const described = lines
+    .map((l) => /NSLocalizedDescription\s*=\s*"?([^";]+)/.exec(l)?.[1] ?? /^(?:Testing failed:|error:)\s*(.+)/i.exec(l)?.[1])
+    .filter((l): l is string => !!l && !/result bundle/i.test(l));
+  return described.slice(-2).join(' ') || 'WebDriverAgent stopped before it was ready.';
 }
