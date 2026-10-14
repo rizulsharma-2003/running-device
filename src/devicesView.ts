@@ -113,7 +113,10 @@ export class DevicesViewProvider implements vscode.WebviewViewProvider, vscode.D
         },
         onSession: (width, height) => generation === this.generation && this.post({ type: 'session', width, height }),
         onPacket: (data, key, config, pts) =>
-          generation === this.generation && this.post({ type: 'packet', data, key, config, pts }),
+          generation === this.generation &&
+          // Copy into a plain Uint8Array: a Node Buffer would be JSON-serialized via
+          // Buffer#toJSON instead of being transferred as binary to the webview.
+          this.post({ type: 'packet', data: new Uint8Array(data), key, config, pts }),
         onClose: (error) => {
           if (generation !== this.generation) {
             return;

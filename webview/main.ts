@@ -54,6 +54,10 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       renderer.resize(msg.width, msg.height);
       break;
     case 'packet':
+      if (!(msg.data instanceof Uint8Array)) {
+        showMessage('Received a video packet in an unexpected format.', true);
+        return;
+      }
       renderer.push(msg.data, msg.key, msg.config, msg.pts);
       break;
   }
