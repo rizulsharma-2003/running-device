@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror, control, record and debug your Android and iOS devices right inside VS Code.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -203,6 +203,12 @@
         "title": "Show Connection Log",
         "category": "Running Devices",
         "icon": "$(output)"
+      },
+      {
+        "command": "runningDevices.enableIphoneControl",
+        "title": "Enable iPhone Touch Control…",
+        "category": "Running Devices",
+        "icon": "$(pointer)"
       }
     ],
     "menus": {

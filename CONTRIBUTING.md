@@ -56,6 +56,9 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | [src/wifi.ts](src/wifi.ts) | QR / code pairing over mDNS, switch to Wi-Fi |
 | [src/ios/iosBackend.ts](src/ios/iosBackend.ts) | iPhone/iPad backend: device watcher, devicectl lookup, stream sessions |
 | [native/ios-mirror/main.swift](native/ios-mirror/main.swift) | macOS helper: CoreMediaIO screen capture → VideoToolbox H.264 → scrcpy framing on stdout. Rebuild with `npm run build-ios-helper` |
+| [src/ios/wdaManager.ts](src/ios/wdaManager.ts) | iPhone touch control: builds/launches WebDriverAgent, maps mirror input to iOS gestures |
+| [src/ios/usbmux.ts](src/ios/usbmux.ts) | usbmuxd client: TCP tunnel to the iPhone over USB |
+| [src/ios/wda.ts](src/ios/wda.ts) | WebDriverAgent HTTP client |
 | [src/videoStream.ts](src/videoStream.ts) | Shared demuxer for the packet framing |
 | [src/flutter.ts](src/flutter.ts) | Flutter bar: finds the Dart-Code debug session on the mirrored device and drives hot reload, restart, inspector |
 | [src/backend.ts](src/backend.ts) | Platform-neutral `DeviceBackend` / `MirrorSession` interfaces |

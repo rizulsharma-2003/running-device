@@ -29,7 +29,8 @@ Everything beyond the toolbar is in the **⋯** menu and in the Command Palette 
 
 Connect an iPhone or iPad to your Mac with a **USB cable**, unlock it, and tap **Trust** if asked. It appears in the device list, mirrored live at up to 60 fps.
 
-- **View-only:** iOS doesn't let a Mac send taps or keys, so the screen is for watching. Use the phone itself to interact.
+- **Touch control (optional):** choose **⋯ → Enable touch control** once. Running Devices builds [WebDriverAgent](https://github.com/appium/WebDriverAgent) (Apple's UI-testing based automation server) with your Apple Development signing and installs it on the iPhone. Then you can click to tap, drag to swipe, and type, and it starts by itself every time you mirror. Needs Xcode, Developer Mode on the iPhone, and trusting your developer app once (Settings → General → VPN & Device Management). Taps land about half a second after the click. With a free Apple ID the signature lasts 7 days; run *Enable touch control* again to renew.
+- Without touch control the iPhone is view-only.
 - **Screenshots** (full resolution), **screen recording** and the **Flutter bar** work just like on Android.
 - The first time, macOS asks to allow **Camera** access for VS Code. That's how macOS labels iPhone screen capture (QuickTime uses the same permission).
 - Nothing to install on the iPhone. Xcode is optional; when it's installed, the device's iOS version is shown and Flutter sessions are matched to it.
@@ -103,7 +104,7 @@ The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** 
 
 ## Coming soon
 
-Touch control for iPhone, iOS Simulator, multiple devices side by side, clipboard sync, and audio forwarding.
+iOS Simulator, multiple devices side by side, clipboard sync, and audio forwarding.
 
 ## Credits
 

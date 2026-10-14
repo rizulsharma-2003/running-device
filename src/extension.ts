@@ -5,6 +5,7 @@ import { DeviceTools } from './android/deviceTools';
 import { DeviceActions } from './actions';
 import { FlutterIntegration } from './flutter';
 import { IosBackend, prepareHelper } from './ios/iosBackend';
+import { WdaManager } from './ios/wdaManager';
 import type { DeviceBackend } from './backend';
 import { MirrorController } from './mirrorController';
 import { DevicePanel, DevicesViewProvider } from './surfaces';
@@ -19,16 +20,19 @@ export function activate(context: vscode.ExtensionContext) {
   const log = (line: string) => output.appendLine(line);
   const backends: DeviceBackend[] = [new AndroidBackend(adb, serverJar, log)];
   // iPhone / iPad over USB (macOS only).
+  let ios: IosBackend | undefined;
   const iosHelper = vscode.Uri.joinPath(context.extensionUri, 'resources', 'ios-mirror').fsPath;
   if (IosBackend.isSupported(iosHelper)) {
     prepareHelper(iosHelper);
-    const ios = new IosBackend(iosHelper, log);
+    ios = new IosBackend(iosHelper, new WdaManager(context.globalStorageUri.fsPath, log), log);
     backends.push(ios);
-    context.subscriptions.push({ dispose: () => ios.dispose() });
+    const iosBackend = ios;
+    context.subscriptions.push({ dispose: () => iosBackend.dispose() });
   }
   const controller = new MirrorController(backends, output);
   const panel = new DevicePanel(context.extensionUri, controller);
-  const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri);
+  const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri, ios);
+  if (ios) ios.onNotice = (text) => controller.toast(text);
   const flutter = new FlutterIntegration(
     () => controller.activeDeviceId,
     (state) => controller.setFlutter(state),

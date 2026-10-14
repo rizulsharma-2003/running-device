@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- **iPhone touch control** (optional): click to tap, drag to swipe or scroll, hold for long-press, and type into the iPhone from VS Code. Toolbar buttons map to iPhone gestures (Back = edge swipe, Overview = app switcher, Home, volume, lock, rotate).
+- One-time setup from **⋯ → Enable touch control**: builds WebDriverAgent with your Apple Development signing; afterwards it starts automatically whenever you mirror the iPhone
+
 ## 0.6.0
 
 - **iPhone and iPad mirroring** (macOS): connect with a USB cable and the device shows up next to your Android devices, at up to 60 fps. View-only, since iOS doesn't allow input from a Mac.

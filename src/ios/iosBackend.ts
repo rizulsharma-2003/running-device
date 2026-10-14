@@ -6,9 +6,10 @@ import type { DeviceInfo } from '../../shared/messages';
 import type { DeviceBackend, InputMessage, MirrorEvents, MirrorOptions, MirrorSession } from '../backend';
 import { SocketReader } from '../android/scrcpy/socketReader';
 import { readVideoPackets } from '../videoStream';
+import { type DeviceControl, WdaManager, WdaSetupError } from './wdaManager';
 
 // iPhone / iPad mirroring over USB (macOS only), through resources/ios-mirror.
-// View-only: iOS has no public way to inject touches from a Mac.
+// Touch control (optional) goes through WebDriverAgent; see wdaManager.ts.
 
 interface CaptureDevice {
   /** AVFoundation capture device id (what the helper needs). */
@@ -50,8 +51,12 @@ export class IosBackend implements DeviceBackend {
   private lookingUp = false;
   private disposed = false;
 
+  /** Short user-facing notices (e.g. "touch control ready"). */
+  onNotice: (text: string) => void = () => undefined;
+
   constructor(
     private readonly helper: string,
+    readonly wda: WdaManager,
     private readonly log: (line: string) => void = () => undefined,
   ) {}
 
@@ -69,8 +74,8 @@ export class IosBackend implements DeviceBackend {
         name: d.name,
         platform: 'ios',
         state: 'device',
-        detail: [details?.osVersion ? `iOS ${details.osVersion}` : 'iOS', 'USB', 'View only'].join(' · '),
-        controls: false,
+        detail: [details?.osVersion ? `iOS ${details.osVersion}` : 'iOS', 'USB', ...(details && this.wda.control(details.udid) ? [] : ['View only'])].join(' · '),
+        controls: !!(details && this.wda.control(details.udid)),
       };
     });
   }
@@ -82,7 +87,27 @@ export class IosBackend implements DeviceBackend {
 
   async startMirroring(deviceId: string, options: MirrorOptions, events: MirrorEvents): Promise<MirrorSession> {
     const name = this.devices.find((d) => d.captureId === this.captureIdFor(deviceId))?.name ?? 'iPhone';
-    return IosSession.start(this.helper, this.captureIdFor(deviceId), name, options, events, this.log);
+    const session = await IosSession.start(this.helper, this.captureIdFor(deviceId), name, options, events, this.log);
+    const udid = this.details.get(name)?.udid;
+    if (udid && this.wda.isSetUp) void this.startControl(udid, session);
+    return session;
+  }
+
+  /** Starts touch control for a mirrored iPhone (WDA must already be built). */
+  async startControl(udid: string, session?: IosSession) {
+    try {
+      const control = await this.wda.start(udid);
+      if (session) session.control = control;
+      this.onNotice('Touch control is on: click to tap, drag to swipe, type to enter text.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.log(`iPhone touch control unavailable: ${message}`);
+      this.onNotice(err instanceof WdaSetupError ? message : `Touch control couldn't start: ${message}`);
+    }
+  }
+
+  udidFor(id: string): string | undefined {
+    return [...this.details.values()].find((d) => d.udid === id)?.udid;
   }
 
   private ensureWatcher() {
@@ -143,12 +168,15 @@ export class IosBackend implements DeviceBackend {
 
   dispose() {
     this.disposed = true;
+    this.wda.dispose();
     this.watcher?.stdin?.end();
     this.watcher?.kill();
   }
 }
 
 class IosSession implements MirrorSession {
+  /** Set once WebDriverAgent is ready for this device. */
+  control: DeviceControl | null = null;
   private disposed = false;
   private stderrLines: string[] = [];
   private snapshotWaiters = new Map<string, (error?: string) => void>();
@@ -215,8 +243,9 @@ class IosSession implements MirrorSession {
   sendInput(input: InputMessage): void {
     if (input.type === 'requestKeyFrame') {
       this.proc.stdin?.write('k\n');
+      return;
     }
-    // Touch and keys aren't possible on iOS from a Mac; the UI hides them.
+    this.control?.handle(input);
   }
 
   /** Full-resolution PNG straight from the capture (not the scaled stream). */

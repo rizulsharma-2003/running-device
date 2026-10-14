@@ -4,6 +4,8 @@ import { homedir, tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import * as vscode from 'vscode';
 import { SettingsBlockedError, type DeviceTools } from './android/deviceTools';
+import type { IosBackend } from './ios/iosBackend';
+import { signingTeams, WdaSetupError } from './ios/wdaManager';
 import { openLogcat } from './logcat';
 import type { ActionMessage, MirrorController, RecordingResult } from './mirrorController';
 import { pairWithCode, pairWithQrCode, switchToWifi } from './wifi';
@@ -26,6 +28,7 @@ export class DeviceActions {
     private readonly controller: MirrorController,
     private readonly tools: DeviceTools,
     private readonly extensionUri: vscode.Uri,
+    private readonly ios?: IosBackend,
   ) {
     controller.onAction = (msg) => void this.handleWebviewAction(msg);
     controller.onRecordingStopped = (result) => void this.announceRecording(result);
@@ -58,6 +61,7 @@ export class DeviceActions {
       cmd('switchToWifi', () => this.switchToWifi()),
       cmd('connectWifi', () => this.connectWifi()),
       cmd('more', () => this.moreMenu()),
+      cmd('enableIphoneControl', () => this.enableIphoneControl()),
     ];
   }
 
@@ -165,6 +169,91 @@ export class DeviceActions {
       await vscode.env.clipboard.writeText(path);
     } else if (choice === 'Copy Image') {
       await copyImageToClipboard(path).catch((err) => vscode.window.showErrorMessage(`Could not copy image: ${errorMessage(err)}`));
+    }
+  }
+
+  // ---- iPhone touch control ----
+
+  /** One-time setup: build WebDriverAgent with the user's signing team, then start it on the mirrored iPhone. */
+  async enableIphoneControl() {
+    const ios = this.ios;
+    const device = this.controller.activeDevice;
+    if (!ios) {
+      void vscode.window.showWarningMessage('iPhone mirroring needs macOS.');
+      return;
+    }
+    const udid = device?.platform === 'ios' ? ios.udidFor(device.id) : undefined;
+    if (!udid) {
+      void vscode.window.showWarningMessage(
+        'Start mirroring your iPhone first. Touch control also needs Xcode installed, so the iPhone can be identified.',
+      );
+      return;
+    }
+
+    if (!ios.wda.isSetUp) {
+      const proceed = await vscode.window.showInformationMessage(
+        'Enable iPhone touch control?',
+        {
+          modal: true,
+          detail:
+            'Running Devices will download WebDriverAgent (Apple UI-testing based, open source), build it with your Apple Development signing, and install a small test-runner app on the iPhone.\n\n' +
+            'Needs Xcode and Developer Mode on the iPhone. The first build takes a few minutes; macOS may ask for your keychain password (choose Always Allow).',
+        },
+        'Continue',
+      );
+      if (proceed !== 'Continue') return;
+
+      const teams = await signingTeams();
+      if (!teams.length) {
+        void vscode.window.showErrorMessage(
+          'No Apple Development certificate found. Open Xcode → Settings → Accounts, sign in with your Apple ID, then try again.',
+        );
+        return;
+      }
+      const team =
+        teams.length === 1
+          ? teams[0]
+          : (
+              await vscode.window.showQuickPick(
+                teams.map((t) => ({ label: t.org || t.name, description: t.id, detail: t.name, t })),
+                { title: 'Sign WebDriverAgent with which Apple team?', placeHolder: 'A personal team keeps it out of company accounts' },
+              )
+            )?.t;
+      if (!team) return;
+
+      try {
+        await vscode.window.withProgress(
+          { location: vscode.ProgressLocation.Notification, title: 'iPhone touch control' },
+          (progress) => ios.wda.setUp(team.id, udid, (message) => progress.report({ message })),
+        );
+      } catch (err) {
+        void vscode.window.showErrorMessage(`Couldn't build WebDriverAgent: ${errorMessage(err)}`, 'Show Log').then(
+          (c) => c && vscode.commands.executeCommand('runningDevices.showLog'),
+        );
+        return;
+      }
+    } else {
+      ios.wda.stop(udid);
+    }
+
+    await this.startIphoneControl(udid);
+  }
+
+  private async startIphoneControl(udid: string): Promise<void> {
+    const ios = this.ios!;
+    try {
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Starting touch control on the iPhone…' },
+        () => ios.wda.start(udid),
+      );
+      this.controller.toast('Touch control is on: click to tap, drag to swipe, type to enter text.');
+      void this.controller.refresh();
+    } catch (err) {
+      const retry = 'Try Again';
+      const kind = err instanceof WdaSetupError ? err.kind : undefined;
+      const title = kind === 'untrusted' ? 'Trust the developer app on your iPhone' : kind === 'locked' ? 'Unlock your iPhone' : "Touch control couldn't start";
+      const choice = await vscode.window.showWarningMessage(title, { modal: true, detail: errorMessage(err) }, retry);
+      if (choice === retry) await this.startIphoneControl(udid);
     }
   }
 
@@ -519,6 +608,12 @@ export class DeviceActions {
           sep('Capture'),
           item('$(device-camera) Take screenshot', 'screenshot', 'full resolution'),
           item(recording ? '$(debug-stop) Stop recording' : '$(record) Record screen', 'toggleRecording'),
+          sep('Control'),
+          item(
+            this.controller.activeDevice.controls ? '$(debug-restart) Restart touch control' : '$(pointer) Enable touch control…',
+            'enableIphoneControl',
+            this.controller.activeDevice.controls ? undefined : 'tap, swipe and type from VS Code',
+          ),
           sep('View'),
           item('$(pulse) Toggle performance stats', 'toggleStats'),
           item('$(output) Show connection log', 'showLog'),

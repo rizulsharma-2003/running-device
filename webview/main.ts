@@ -627,7 +627,7 @@ canvas.addEventListener('pointerdown', (e) => {
     // Explain instead of silently ignoring the click.
     if (Date.now() - viewOnlyHintAt > 4000) {
       viewOnlyHintAt = Date.now();
-      showToast('iPhone mirroring is view-only: iOS doesn’t accept taps from a Mac. Use the phone to interact.');
+      showToast('This iPhone is view-only. To tap and type from here, choose ⋯ → Enable touch control.');
     }
     return;
   }
