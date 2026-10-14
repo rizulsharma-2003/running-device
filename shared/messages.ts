@@ -12,6 +12,8 @@ export interface DeviceInfo {
   state: string;
   /** Short secondary line, e.g. "Android 13 · USB". */
   detail?: string;
+  /** False when the device can be watched but not controlled (iPhone). */
+  controls?: boolean;
 }
 
 export type VideoCodec = 'h264' | 'h265' | 'av1';

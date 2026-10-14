@@ -54,6 +54,9 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | [src/recorder.ts](src/recorder.ts) | Annex B → MP4 muxing of the mirror stream |
 | [src/logcat.ts](src/logcat.ts) | Logcat pseudo-terminal with per-app pid tracking |
 | [src/wifi.ts](src/wifi.ts) | QR / code pairing over mDNS, switch to Wi-Fi |
+| [src/ios/iosBackend.ts](src/ios/iosBackend.ts) | iPhone/iPad backend: device watcher, devicectl lookup, stream sessions |
+| [native/ios-mirror/main.swift](native/ios-mirror/main.swift) | macOS helper: CoreMediaIO screen capture → VideoToolbox H.264 → scrcpy framing on stdout. Rebuild with `npm run build-ios-helper` |
+| [src/videoStream.ts](src/videoStream.ts) | Shared demuxer for the packet framing |
 | [src/flutter.ts](src/flutter.ts) | Flutter bar: finds the Dart-Code debug session on the mirrored device and drives hot reload, restart, inspector |
 | [src/backend.ts](src/backend.ts) | Platform-neutral `DeviceBackend` / `MirrorSession` interfaces |
 | [src/android/adb.ts](src/android/adb.ts) | adb discovery and commands |

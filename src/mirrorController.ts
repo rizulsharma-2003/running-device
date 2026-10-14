@@ -335,6 +335,18 @@ export class MirrorController implements vscode.Disposable {
     return this.activeId;
   }
 
+  /** The device being mirrored, with its platform and capabilities. */
+  get activeDevice(): DeviceInfo | undefined {
+    return this.devices.find((d) => d.id === this.activeId);
+  }
+
+  /** Screenshot through the mirroring session (platforms without adb). */
+  async sessionScreenshot(path: string): Promise<boolean> {
+    if (!this.session?.screenshot) return false;
+    await this.session.screenshot(path);
+    return true;
+  }
+
   get isRecording() {
     return !!this.recorder;
   }

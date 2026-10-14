@@ -121,6 +121,8 @@ function resetVideo() {
 
 const readyDevices = () => state.devices.filter((d) => d.state === 'device');
 const currentDevice = () => state.devices.find((d) => d.id === (state.activeId ?? select.value));
+/** iPhones can be watched but not controlled from a Mac. */
+const canControl = () => currentDevice()?.controls !== false;
 
 /** Card shown instead of the phone: what it says and what its buttons do. */
 interface CardSpec {
@@ -208,7 +210,8 @@ function render() {
     skeletonText.textContent =
       state.status === 'connecting'
         ? state.statusMessage || 'Connecting…'
-        : `Waiting for ${state.deviceName || 'the device'}…`;
+        : `Waiting for ${state.deviceName || 'the device'}…` +
+          (currentDevice()?.platform === 'ios' ? '\nUnlock your iPhone if it’s locked.' : '');
     layout();
   }
 }
@@ -239,6 +242,13 @@ function renderDevices() {
         : device.state
     : 'Connect with USB or Wi-Fi';
   body.classList.toggle('has-device', readyDevices().length > 0);
+  const viewOnly = !!state.activeId && !canControl();
+  if (body.classList.contains('view-only') !== viewOnly) {
+    body.classList.toggle('view-only', viewOnly);
+    body.dataset.platform = currentDevice()?.platform ?? '';
+    layout();
+  }
+  body.dataset.platform = currentDevice()?.platform ?? '';
 
   const running = !!state.activeId;
   select.disabled = !state.devices.length;
@@ -328,6 +338,11 @@ function layout() {
   const hz = measureControls('h');
 
   let phone = fitPhone(availW, availH);
+  if (body.classList.contains('view-only')) {
+    placePhone(phone, PAD + (availW - phone.w) / 2, PAD + (availH - phone.h) / 2);
+    body.classList.remove('controls-overlay');
+    return;
+  }
   const spareX = availW - phone.w;
   const spareY = availH - phone.h;
   let mode: ControlsMode;
@@ -365,14 +380,7 @@ function layout() {
     cy = y + phone.h - hz.h - Math.max(10, phone.bezel + 10);
   }
 
-  const screenRadius = Math.round(Math.min(phone.screenW, phone.screenH) * 0.085);
-  frame.style.left = `${Math.round(x)}px`;
-  frame.style.top = `${Math.round(y)}px`;
-  frame.style.width = `${Math.round(phone.w)}px`;
-  frame.style.height = `${Math.round(phone.h)}px`;
-  frame.style.setProperty('--bezel', `${phone.bezel}px`);
-  frame.style.setProperty('--screen-radius', `${screenRadius}px`);
-  frame.style.setProperty('--frame-radius', `${screenRadius + phone.bezel}px`);
+  placePhone(phone, x, y);
 
   controls.dataset.orient = orient;
   controls.style.left = `${Math.round(cx)}px`;
@@ -426,6 +434,19 @@ function showToast(text: string) {
   toast.textContent = text;
   toast.classList.add('visible');
   toastTimer = window.setTimeout(() => toast.classList.remove('visible'), 3800);
+}
+
+/** Positions and sizes the bezel; iPhones have much rounder screen corners than most Android phones. */
+function placePhone(phone: ReturnType<typeof fitPhone>, x: number, y: number) {
+  const ratio = currentDevice()?.platform === 'ios' ? 0.14 : 0.085;
+  const screenRadius = Math.round(Math.min(phone.screenW, phone.screenH) * ratio);
+  frame.style.left = `${Math.round(x)}px`;
+  frame.style.top = `${Math.round(y)}px`;
+  frame.style.width = `${Math.round(phone.w)}px`;
+  frame.style.height = `${Math.round(phone.h)}px`;
+  frame.style.setProperty('--bezel', `${phone.bezel}px`);
+  frame.style.setProperty('--screen-radius', `${screenRadius}px`);
+  frame.style.setProperty('--frame-radius', `${screenRadius + phone.bezel}px`);
 }
 
 // ---- auto-hide for the overlay control bar ----
@@ -600,7 +621,7 @@ function sendPointer(e: PointerEvent, action: 'down' | 'move' | 'up') {
 }
 
 canvas.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0) {
+  if (e.button !== 0 || !canControl()) {
     return;
   }
   canvas.focus();
@@ -630,7 +651,7 @@ canvas.addEventListener('pointercancel', endPointer);
 let lastWake = 0;
 const wake = () => {
   const now = Date.now();
-  if (state.activeId && state.surfaceActive && now - lastWake > 1000) {
+  if (state.activeId && state.surfaceActive && canControl() && now - lastWake > 1000) {
     lastWake = now;
     send({ type: 'wake' });
   }
@@ -641,7 +662,7 @@ canvas.addEventListener('pointermove', wake);
 canvas.addEventListener('contextmenu', (e) => {
   // Right click = back, like scrcpy.
   e.preventDefault();
-  if (state.activeId) {
+  if (state.activeId && canControl()) {
     send({ type: 'button', button: 'back', action: 'press' });
   }
 });
@@ -649,7 +670,7 @@ canvas.addEventListener('contextmenu', (e) => {
 canvas.addEventListener(
   'wheel',
   (e) => {
-    if (!video.width) {
+    if (!video.width || !canControl()) {
       return;
     }
     e.preventDefault();
@@ -673,7 +694,7 @@ canvas.addEventListener(
 const keysDown = new Set<string>();
 
 canvas.addEventListener('keydown', (e) => {
-  if (!state.activeId) {
+  if (!state.activeId || !canControl()) {
     return;
   }
   const isShortcut = e.ctrlKey || e.metaKey || e.altKey;

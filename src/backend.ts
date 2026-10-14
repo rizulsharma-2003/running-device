@@ -27,6 +27,8 @@ export type InputMessage = Extract<
 
 export interface MirrorSession {
   sendInput(input: InputMessage): void;
+  /** Platform-native full-resolution screenshot, when the platform has no adb. */
+  screenshot?(path: string): Promise<void>;
   dispose(): void;
 }
 

@@ -106,6 +106,16 @@ export class DeviceActions {
   }
 
   async screenshot() {
+    // iPhone: straight from the capture helper, at native resolution.
+    const active = this.controller.activeDevice;
+    if (active && active.platform !== 'android') {
+      const path = this.captureName('Screenshot', active.name, 'png');
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Taking screenshot…' }, () =>
+        this.controller.sessionScreenshot(path),
+      );
+      await this.announceCapture(path, `Screenshot saved: ${basename(path)}`, true);
+      return;
+    }
     const target = await this.target();
     if (!target) return;
     const png = await vscode.window.withProgress(
@@ -502,6 +512,22 @@ export class DeviceActions {
       description: detail,
       run: () => vscode.commands.executeCommand(`runningDevices.${command}`),
     });
+    // iPhone: only what works without adb.
+    if (this.controller.activeDevice?.platform === 'ios') {
+      const pick = await vscode.window.showQuickPick(
+        [
+          sep('Capture'),
+          item('$(device-camera) Take screenshot', 'screenshot', 'full resolution'),
+          item(recording ? '$(debug-stop) Stop recording' : '$(record) Record screen', 'toggleRecording'),
+          sep('View'),
+          item('$(pulse) Toggle performance stats', 'toggleStats'),
+          item('$(output) Show connection log', 'showLog'),
+        ],
+        { title: this.controller.activeDevice.name },
+      );
+      await pick?.run?.();
+      return;
+    }
     const items: MenuItem[] = [
       sep('Capture'),
       item('$(device-camera) Take screenshot', 'screenshot'),

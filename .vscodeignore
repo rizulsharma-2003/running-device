@@ -12,3 +12,4 @@ esbuild.mjs
 CONTRIBUTING.md
 media/logo.svg
 package-lock.json
+native/**

@@ -699,6 +699,16 @@ body:not(.live) .controls {
   pointer-events: none;
 }
 
+/* Watch-only devices (iPhone): no device controls at all. */
+body.view-only .controls,
+body.view-only .handle {
+  display: none !important;
+}
+
+.skeleton-text {
+  white-space: pre-line;
+}
+
 /* No spare room: the bar floats over the bottom of the screen and hides until wanted. */
 body.controls-overlay .controls {
   background: color-mix(in srgb, var(--bg) 94%, transparent);

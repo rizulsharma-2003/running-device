@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- **iPhone and iPad mirroring** (macOS): connect with a USB cable and the device shows up next to your Android devices, at up to 60 fps. View-only, since iOS doesn't allow input from a Mac.
+- Full-resolution iPhone screenshots and MP4 recording, device frame with iPhone-style corners
+- The Flutter bar works with Flutter apps running on a mirrored iPhone
+
 ## 0.5.0
 
 - **Flutter controls**: when a Flutter app from VS Code runs on the mirrored device, a Flutter bar appears with hot reload, hot restart, restart, stop, widget inspector and DevTools, plus live status ("Hot reloading…", "Reloaded in 312 ms"). Hot reloads on save show up there too.

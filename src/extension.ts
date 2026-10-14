@@ -4,6 +4,8 @@ import { AndroidBackend } from './android/androidBackend';
 import { DeviceTools } from './android/deviceTools';
 import { DeviceActions } from './actions';
 import { FlutterIntegration } from './flutter';
+import { IosBackend, prepareHelper } from './ios/iosBackend';
+import type { DeviceBackend } from './backend';
 import { MirrorController } from './mirrorController';
 import { DevicePanel, DevicesViewProvider } from './surfaces';
 
@@ -14,7 +16,16 @@ export function activate(context: vscode.ExtensionContext) {
   output.appendLine(`Using adb: ${adb.path}`);
 
   const serverJar = vscode.Uri.joinPath(context.extensionUri, 'resources', 'scrcpy-server').fsPath;
-  const backends = [new AndroidBackend(adb, serverJar, (line) => output.appendLine(line))];
+  const log = (line: string) => output.appendLine(line);
+  const backends: DeviceBackend[] = [new AndroidBackend(adb, serverJar, log)];
+  // iPhone / iPad over USB (macOS only).
+  const iosHelper = vscode.Uri.joinPath(context.extensionUri, 'resources', 'ios-mirror').fsPath;
+  if (IosBackend.isSupported(iosHelper)) {
+    prepareHelper(iosHelper);
+    const ios = new IosBackend(iosHelper, log);
+    backends.push(ios);
+    context.subscriptions.push({ dispose: () => ios.dispose() });
+  }
   const controller = new MirrorController(backends, output);
   const panel = new DevicePanel(context.extensionUri, controller);
   const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri);

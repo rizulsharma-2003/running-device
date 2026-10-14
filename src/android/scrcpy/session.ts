@@ -4,6 +4,7 @@ import { connect, Socket } from 'node:net';
 import type { DeviceButton, InputMessage, MirrorEvents, MirrorOptions, MirrorSession } from '../../backend';
 import type { Adb } from '../adb';
 import * as P from './protocol';
+import { readVideoPackets } from '../../videoStream';
 import { SocketReader } from './socketReader';
 
 const CONNECT_ATTEMPTS = 100;
@@ -136,21 +137,7 @@ export class ScrcpySession implements MirrorSession {
 
   private async readVideo(reader: SocketReader) {
     try {
-      while (!this.disposed) {
-        const header = await reader.read(P.PACKET_HEADER_SIZE);
-        if (header[0] & 0x80) {
-          // Session packet: new capture session (startup, rotation, fold).
-          this.events.onSession(header.readUInt32BE(4), header.readUInt32BE(8));
-          continue;
-        }
-        const ptsAndFlags = header.readBigUInt64BE(0);
-        const config = (ptsAndFlags & (1n << 62n)) !== 0n;
-        const key = (ptsAndFlags & (1n << 61n)) !== 0n;
-        const pts = Number(ptsAndFlags & ((1n << 61n) - 1n));
-        const size = header.readUInt32BE(8);
-        const data = await reader.read(size);
-        this.events.onPacket(data, key, config, pts);
-      }
+      await readVideoPackets(reader, this.events, () => this.disposed);
     } catch (err) {
       this.fail(err instanceof Error ? err : new Error(String(err)));
     }

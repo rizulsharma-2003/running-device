@@ -1,13 +1,14 @@
-import type { Socket } from 'node:net';
+/** Minimal readable: a socket or a child process's stdout. */
+type Readable = { on(event: string, listener: (...args: any[]) => void): unknown };
 
-/** Turns a socket into exact-length async reads, which is what a framed protocol needs. */
+/** Turns a socket or stream into exact-length async reads, which is what a framed protocol needs. */
 export class SocketReader {
   private chunks: Buffer[] = [];
   private buffered = 0;
   private pending: { size: number; resolve: (b: Buffer) => void; reject: (e: Error) => void } | null = null;
   private closedError: Error | null = null;
 
-  constructor(socket: Socket) {
+  constructor(socket: Readable) {
     socket.on('data', (chunk: Buffer) => {
       this.chunks.push(chunk);
       this.buffered += chunk.length;

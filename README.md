@@ -1,6 +1,6 @@
 # Running Devices
 
-See and control your Android phone right inside VS Code. Plug in a device, open the panel, and its live screen appears next to your code. Tap, swipe, scroll and type with your mouse and keyboard.
+See and control your Android phone, and watch your iPhone, right inside VS Code. Plug in a device, open the panel, and its live screen appears next to your code. Tap, swipe, scroll and type with your mouse and keyboard.
 
 No app to install on the phone, and no root.
 
@@ -24,6 +24,15 @@ If only one device is connected, mirroring starts automatically. Otherwise pick 
 - **Performance stats**: live fps, bitrate and resolution over the screen.
 
 Everything beyond the toolbar is in the **⋯** menu and in the Command Palette under *Running Devices*.
+
+## iPhone and iPad (macOS)
+
+Connect an iPhone or iPad to your Mac with a **USB cable**, unlock it, and tap **Trust** if asked. It appears in the device list, mirrored live at up to 60 fps.
+
+- **View-only:** iOS doesn't let a Mac send taps or keys, so the screen is for watching. Use the phone itself to interact.
+- **Screenshots** (full resolution), **screen recording** and the **Flutter bar** work just like on Android.
+- The first time, macOS asks to allow **Camera** access for VS Code. That's how macOS labels iPhone screen capture (QuickTime uses the same permission).
+- Nothing to install on the iPhone. Xcode is optional; when it's installed, the device's iOS version is shown and Flutter sessions are matched to it.
 
 ## Flutter
 
@@ -66,6 +75,7 @@ The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** 
 
 - **adb** from the Android SDK Platform-Tools. It's found automatically if the Android SDK is installed in its default location, or if `adb` is on your `PATH`. Otherwise set `runningDevices.adbPath`.
 - Android 5.0 or newer.
+- For iPhone/iPad: macOS 14 or newer and a USB cable.
 
 ## Settings
 
@@ -88,11 +98,12 @@ The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** 
 - **Black or frozen screen**: some devices struggle at high resolutions. Try `runningDevices.maxSize` = `1024`.
 - **Quick settings say the phone blocks changes**: Xiaomi, OPPO, Realme and OnePlus phones need an extra switch in Developer options: *Disable permission monitoring* (OPPO, Realme, OnePlus) or *USB debugging (Security settings)* (Xiaomi). Dark theme and layout bounds work without it.
 - **Wi-Fi pairing doesn't find the phone**: the phone and computer must be on the same network, and some office or guest networks block device discovery. Use *Pair with pairing code* or *Switch USB device to Wi-Fi* instead.
+- **iPhone doesn't appear or stays on "Waiting for video"**: use a cable (not Wi-Fi), unlock the iPhone, and allow Camera access for Visual Studio Code in System Settings → Privacy & Security → Camera.
 - **Anything else**: open **View → Output** and choose **Running Devices** to see the connection log.
 
 ## Coming soon
 
-iOS device and simulator mirroring, multiple devices side by side, clipboard sync, and audio forwarding.
+Touch control for iPhone, iOS Simulator, multiple devices side by side, clipboard sync, and audio forwarding.
 
 ## Credits
 
