@@ -34,7 +34,9 @@ export type HostMessage =
   | { type: 'status'; state: 'idle' | 'connecting' | 'streaming' | 'error'; message?: string }
   | { type: 'stream'; codec: VideoCodec; deviceName: string }
   | { type: 'session'; width: number; height: number }
-  | { type: 'packet'; data: Uint8Array; key: boolean; config: boolean; pts: number };
+  | { type: 'packet'; data: Uint8Array; key: boolean; config: boolean; pts: number }
+  /** Only one surface (side bar view, editor tab, floating window) shows the stream at a time. */
+  | { type: 'surface'; active: boolean };
 
 // ---- webview -> host ----
 
@@ -43,6 +45,10 @@ export type WebviewMessage =
   | { type: 'select'; deviceId: string }
   | { type: 'stop' }
   | { type: 'refresh' }
+  /** Move the stream to this surface. */
+  | { type: 'showHere' }
+  /** Pointer is over the screen: wake the device if it's asleep. */
+  | { type: 'wake' }
   | {
       type: 'pointer';
       action: PointerAction;

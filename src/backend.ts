@@ -22,7 +22,7 @@ export interface MirrorEvents {
 
 export type InputMessage = Extract<
   WebviewMessage,
-  { type: 'pointer' | 'scroll' | 'key' | 'text' | 'button' | 'requestKeyFrame' }
+  { type: 'pointer' | 'scroll' | 'key' | 'text' | 'button' | 'requestKeyFrame' | 'wake' }
 >;
 
 export interface MirrorSession {

@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror and control your Android device inside VS Code, like Android Studio's Running Devices window.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -28,7 +28,9 @@
     "remote control"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onWebviewPanel:runningDevices.panel"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -65,19 +67,80 @@
         "command": "runningDevices.show",
         "title": "Show Running Devices",
         "category": "Running Devices"
+      },
+      {
+        "command": "runningDevices.popOut",
+        "title": "Pop Out to Window",
+        "category": "Running Devices",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "runningDevices.openInEditor",
+        "title": "Open in Editor Tab",
+        "category": "Running Devices",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "runningDevices.moveView",
+        "title": "Move View…",
+        "category": "Running Devices",
+        "icon": "$(move)"
+      },
+      {
+        "command": "runningDevices.moveToSideBar",
+        "title": "Move Back to Side Bar",
+        "category": "Running Devices",
+        "icon": "$(layout-sidebar-left)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "runningDevices.refresh",
+          "command": "runningDevices.popOut",
           "when": "view == runningDevices.view",
           "group": "navigation@1"
         },
         {
+          "command": "runningDevices.openInEditor",
+          "when": "view == runningDevices.view",
+          "group": "navigation@2"
+        },
+        {
+          "command": "runningDevices.refresh",
+          "when": "view == runningDevices.view",
+          "group": "navigation@3"
+        },
+        {
           "command": "runningDevices.stop",
           "when": "view == runningDevices.view && runningDevices.mirroring",
+          "group": "navigation@4"
+        },
+        {
+          "command": "runningDevices.moveView",
+          "when": "view == runningDevices.view",
+          "group": "layout@1"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "runningDevices.popOut",
+          "when": "activeWebviewPanelId == 'runningDevices.panel'",
+          "group": "navigation@1"
+        },
+        {
+          "command": "runningDevices.moveToSideBar",
+          "when": "activeWebviewPanelId == 'runningDevices.panel'",
           "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "runningDevices.moveToSideBar",
+          "when": "runningDevices.panelOpen"
+        },
+        {
+          "command": "runningDevices.stop",
+          "when": "runningDevices.mirroring"
         }
       ]
     },
@@ -114,6 +177,11 @@
           "type": "boolean",
           "default": true,
           "description": "Start mirroring automatically when exactly one device is connected."
+        },
+        "runningDevices.wakeOnHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Turn the device screen on when the mouse moves over the mirrored screen, and keep it awake while you hover."
         }
       }
     }

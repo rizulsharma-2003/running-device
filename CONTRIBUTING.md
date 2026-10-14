@@ -46,7 +46,9 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | Path | Role |
 | --- | --- |
 | [src/extension.ts](src/extension.ts) | Activation, commands, wiring |
-| [src/devicesView.ts](src/devicesView.ts) | Webview view: device polling, session lifecycle, message routing |
+| [src/mirrorController.ts](src/mirrorController.ts) | Device polling, session lifecycle, routes the stream to the active surface |
+| [src/surfaces.ts](src/surfaces.ts) | Side bar view and editor tab / floating window that display the device |
+| [src/html.ts](src/html.ts) | Webview markup and the toolbar icon set |
 | [src/backend.ts](src/backend.ts) | Platform-neutral `DeviceBackend` / `MirrorSession` interfaces |
 | [src/android/adb.ts](src/android/adb.ts) | adb discovery and commands |
 | [src/android/scrcpy/](src/android/scrcpy/) | scrcpy v5.0.1 wire protocol, socket handling, demuxing |

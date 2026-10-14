@@ -10,9 +10,17 @@ No app to install on the phone, and no root.
 2. Connect it with a USB cable and accept the "Allow USB debugging?" prompt on the phone. An emulator works too.
 3. Click the **Running Devices** icon in the VS Code activity bar.
 
-If only one device is connected, mirroring starts automatically. Otherwise pick one from the dropdown and press **Start**.
+If only one device is connected, mirroring starts automatically. Otherwise pick one from the dropdown and press the ▶ (Start) button.
 
-**Tip:** drag the panel into the Secondary Side Bar to keep the device on the right of your editor, like Android Studio.
+## Put it anywhere
+
+Use the buttons in the panel's title bar:
+
+- **Pop Out to Window** opens the device in its own floating window, which you can place on another monitor.
+- **Open in Editor Tab** shows it as a tab, so you can split it next to your code.
+- **Move View…** (under **⋯**) moves the panel to the Secondary Side Bar (on the right, like Android Studio), the bottom Panel, or back.
+
+Only one place shows the live screen at a time. The others show a **Show here** button to bring it back. Switching doesn't reconnect to the device.
 
 ## Controls
 
@@ -23,6 +31,7 @@ If only one device is connected, mirroring starts automatically. Otherwise pick 
 | Right-click or Esc | Back |
 | Typing (click the screen first) | Types into the focused field |
 | Cmd/Ctrl + V | Pastes your clipboard text |
+| Moving the mouse over the screen | Wakes the screen if it's off and keeps it on |
 | Arrows, Enter, Backspace, Tab | The same keys |
 
 The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** (hold for the power menu), **Rotate** and **Notifications**.
@@ -42,6 +51,7 @@ The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** 
 | `runningDevices.maxFps` | `60` | Frame-rate limit |
 | `runningDevices.stayAwake` | `true` | Keep the device awake while mirroring |
 | `runningDevices.autoStart` | `true` | Start automatically when a single device is connected |
+| `runningDevices.wakeOnHover` | `true` | Turn the screen on when the mouse is over it |
 
 ## Troubleshooting
 

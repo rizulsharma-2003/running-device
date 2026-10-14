@@ -187,6 +187,8 @@ export class ScrcpySession implements MirrorSession {
         return encodeButton(input.button, input.action);
       case 'requestKeyFrame':
         return [P.resetVideo()];
+      case 'wake':
+        return [P.injectKeycode(P.KeyAction.Down, P.Keycode.WAKEUP), P.injectKeycode(P.KeyAction.Up, P.Keycode.WAKEUP)];
     }
   }
 

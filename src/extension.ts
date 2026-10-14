@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { Adb, resolveAdbPath } from './android/adb';
 import { AndroidBackend } from './android/androidBackend';
-import { DevicesViewProvider } from './devicesView';
+import { MirrorController } from './mirrorController';
+import { DevicePanel, DevicesViewProvider } from './surfaces';
 
 export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Running Devices');
@@ -11,19 +12,38 @@ export function activate(context: vscode.ExtensionContext) {
 
   const serverJar = vscode.Uri.joinPath(context.extensionUri, 'resources', 'scrcpy-server').fsPath;
   const backends = [new AndroidBackend(adb, serverJar, (line) => output.appendLine(line))];
-  const provider = new DevicesViewProvider(context.extensionUri, backends, output);
+  const controller = new MirrorController(backends, output);
+  const panel = new DevicePanel(context.extensionUri, controller);
+
+  const focusView = () => vscode.commands.executeCommand(`${DevicesViewProvider.viewId}.focus`);
 
   context.subscriptions.push(
     output,
-    provider,
-    vscode.window.registerWebviewViewProvider(DevicesViewProvider.viewId, provider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    }),
-    vscode.commands.registerCommand('runningDevices.refresh', () => provider.refresh()),
-    vscode.commands.registerCommand('runningDevices.stop', () => provider.stop()),
-    vscode.commands.registerCommand('runningDevices.show', () =>
-      vscode.commands.executeCommand(`${DevicesViewProvider.viewId}.focus`),
+    controller,
+    vscode.window.registerWebviewViewProvider(
+      DevicesViewProvider.viewId,
+      new DevicesViewProvider(context.extensionUri, controller),
+      { webviewOptions: { retainContextWhenHidden: true } },
     ),
+    // Restores the editor tab / floating window after a window reload.
+    vscode.window.registerWebviewPanelSerializer(DevicePanel.viewType, {
+      async deserializeWebviewPanel(webviewPanel) {
+        panel.adopt(webviewPanel);
+      },
+    }),
+    vscode.commands.registerCommand('runningDevices.refresh', () => controller.refresh()),
+    vscode.commands.registerCommand('runningDevices.stop', () => controller.stop()),
+    vscode.commands.registerCommand('runningDevices.show', focusView),
+    vscode.commands.registerCommand('runningDevices.openInEditor', () => panel.open()),
+    vscode.commands.registerCommand('runningDevices.popOut', () => panel.popOut()),
+    vscode.commands.registerCommand('runningDevices.moveToSideBar', async () => {
+      panel.close();
+      await focusView();
+    }),
+    vscode.commands.registerCommand('runningDevices.moveView', async () => {
+      await focusView();
+      await vscode.commands.executeCommand('workbench.action.moveFocusedView');
+    }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('runningDevices.adbPath')) {
         void vscode.window

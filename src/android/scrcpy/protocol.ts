@@ -63,6 +63,8 @@ export const Keycode = {
   MOVE_HOME: 122,
   MOVE_END: 123,
   APP_SWITCH: 187,
+  /** Turns the screen on if it's off; no-op otherwise (unlike POWER, which toggles). */
+  WAKEUP: 224,
 } as const;
 
 const MetaState = {

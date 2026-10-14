@@ -15,55 +15,123 @@ body {
   font-size: var(--vscode-font-size);
 }
 
+/* ---- toolbars ---- */
+
 .toolbar {
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 6px 8px;
-  flex-wrap: wrap;
 }
 
-.toolbar.buttons {
+.toolbar.controls {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
   padding-top: 0;
 }
 
-body:not([data-state='streaming']) .toolbar.buttons button {
-  opacity: 0.4;
-  pointer-events: none;
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.sep {
+/* Thin divider between groups, like VS Code toolbars. */
+.group + .group::before {
+  content: '';
   width: 1px;
   height: 16px;
-  margin: 0 4px;
-  background: var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+  margin: 0 4px 0 2px;
+  background: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
+}
+
+body:not(.live) .controls .icon-button {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 select {
   flex: 1;
   min-width: 0;
   height: 26px;
+  padding: 0 4px;
   color: var(--vscode-dropdown-foreground);
   background: var(--vscode-dropdown-background);
   border: 1px solid var(--vscode-dropdown-border, transparent);
-  border-radius: 2px;
+  border-radius: 4px;
   font: inherit;
 }
 
+/* ---- buttons ---- */
+
 button {
-  min-width: 28px;
-  height: 26px;
-  padding: 0 8px;
-  color: var(--vscode-foreground);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
   font: inherit;
   cursor: pointer;
 }
 
-button:hover {
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+}
+
+.icon-button:hover {
   background: var(--vscode-toolbar-hoverBackground);
+}
+
+.icon-button:active {
+  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  background: transparent;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Start/stop toggle: play icon in the button color when stopped, stop icon in red when running. */
+.toggle .when-running,
+.toggle.running .when-stopped {
+  display: none;
+}
+
+.toggle.running .when-running {
+  display: block;
+}
+
+.toggle {
+  color: var(--vscode-debugIcon-startForeground, #89d185);
+}
+
+.toggle.running {
+  color: var(--vscode-debugIcon-stopForeground, #f48771);
+}
+
+.text-button {
+  height: 26px;
+  padding: 0 12px;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+  border: none;
+  border-radius: 4px;
+}
+
+.text-button:hover {
+  background: var(--vscode-button-hoverBackground);
 }
 
 button:focus-visible,
@@ -73,19 +141,7 @@ canvas:focus-visible {
   outline-offset: -1px;
 }
 
-button.primary {
-  color: var(--vscode-button-foreground);
-  background: var(--vscode-button-background);
-}
-
-button.primary:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
+/* ---- screen ---- */
 
 #stage {
   position: relative;
@@ -107,24 +163,36 @@ button:disabled {
   cursor: default;
 }
 
-body:not([data-state='streaming']) #screen {
+body:not([data-state='streaming']) #screen,
+body.elsewhere #screen {
   visibility: hidden;
 }
 
-#message {
+#overlay {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   padding: 24px;
   text-align: center;
-  color: var(--vscode-descriptionForeground);
   pointer-events: none;
 }
 
-#message[hidden] {
+#overlay[hidden],
+#overlay [hidden] {
   display: none;
+}
+
+#overlay button {
+  pointer-events: auto;
+}
+
+#message {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
 }
 
 #message.error {

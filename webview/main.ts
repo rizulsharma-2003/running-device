@@ -9,17 +9,28 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const select = $<HTMLSelectElement>('device');
 const toggle = $<HTMLButtonElement>('toggle');
 const canvas = $<HTMLCanvasElement>('screen');
-const message = $<HTMLDivElement>('message');
+const overlay = $<HTMLDivElement>('overlay');
+const message = $<HTMLParagraphElement>('message');
+const showHere = $<HTMLButtonElement>('show-here');
 const buttons = $<HTMLElement>('buttons');
 
-let devices: DeviceInfo[] = [];
-let activeId: string | null = null;
+const state = {
+  devices: [] as DeviceInfo[],
+  activeId: null as string | null,
+  status: 'idle' as Extract<HostMessage, { type: 'status' }>['state'],
+  statusMessage: '',
+  deviceName: '',
+  /** False when another surface (editor tab, window) is showing the stream. */
+  surfaceActive: true,
+  hasFrame: false,
+};
 let video = { width: 0, height: 0 };
 
 const renderer = new VideoRenderer(
   canvas,
   () => {
-    showMessage('');
+    state.hasFrame = true;
+    render();
     canvas.focus();
   },
   () => send({ type: 'requestKeyFrame' }),
@@ -31,23 +42,25 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
   const msg = event.data;
   switch (msg.type) {
     case 'devices':
-      devices = msg.devices;
-      activeId = msg.activeId;
+      state.devices = msg.devices;
+      state.activeId = msg.activeId;
       renderDevices();
       break;
     case 'status':
-      document.body.dataset.state = msg.state;
-      if (msg.state === 'idle') {
-        renderer.reset();
-        video = { width: 0, height: 0 };
-        showMessage(devices.some((d) => d.state === 'device') ? 'Select a device and press Start.' : noDevicesHint);
-      } else if (msg.state === 'connecting' || msg.state === 'error') {
-        renderer.reset();
-        showMessage(msg.message ?? '', msg.state === 'error');
+      if (msg.state !== 'streaming') {
+        resetVideo();
+      }
+      state.status = msg.state;
+      state.statusMessage = msg.message ?? '';
+      break;
+    case 'surface':
+      state.surfaceActive = msg.active;
+      if (!msg.active) {
+        resetVideo();
       }
       break;
     case 'stream':
-      showMessage(`Waiting for video from ${msg.deviceName}…`);
+      state.deviceName = msg.deviceName;
       break;
     case 'session':
       video = { width: msg.width, height: msg.height };
@@ -55,73 +68,106 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       break;
     case 'packet':
       if (!(msg.data instanceof Uint8Array)) {
-        showMessage('Received a video packet in an unexpected format.', true);
-        return;
+        state.status = 'error';
+        state.statusMessage = 'Received a video packet in an unexpected format.';
+        break;
       }
       renderer.push(msg.data, msg.key, msg.config, msg.pts);
-      break;
+      return; // hot path: nothing to re-render
   }
+  render();
 });
 
-const noDevicesHint =
-  'No devices found. Connect a device with USB debugging enabled, or start an emulator.';
+function resetVideo() {
+  renderer.reset();
+  state.hasFrame = false;
+  video = { width: 0, height: 0 };
+}
 
-function showMessage(text: string, error = false) {
+// ---- rendering ----
+
+function render() {
+  const live = state.surfaceActive && state.status === 'streaming';
+  document.body.dataset.state = state.status;
+  document.body.classList.toggle('live', live && state.hasFrame);
+  document.body.classList.toggle('elsewhere', !state.surfaceActive);
+
+  let text = '';
+  let isError = false;
+  if (!state.surfaceActive && state.activeId) {
+    text = 'Showing in another tab or window.';
+  } else if (!state.surfaceActive) {
+    text = 'Running Devices is open in another tab or window.';
+  } else if (state.status === 'error') {
+    text = state.statusMessage;
+    isError = true;
+  } else if (state.status === 'connecting') {
+    text = state.statusMessage || 'Connecting…';
+  } else if (state.status === 'streaming' && !state.hasFrame) {
+    text = `Waiting for video from ${state.deviceName || 'device'}…`;
+  } else if (state.status === 'idle') {
+    text = state.devices.length
+      ? 'Select a device and press Start.'
+      : 'No devices found. Connect a device with USB debugging enabled, or start an emulator.';
+  }
   message.textContent = text;
-  message.hidden = !text;
-  message.classList.toggle('error', error);
+  message.classList.toggle('error', isError);
+  overlay.hidden = !text;
+  showHere.hidden = state.surfaceActive;
 }
 
 function renderDevices() {
-  const ids = devices.map((d) => `${d.id}:${d.state}`).join('|');
+  const ids = state.devices.map((d) => `${d.id}:${d.state}`).join('|');
   if (select.dataset.ids !== ids) {
     select.dataset.ids = ids;
     select.replaceChildren(
-      ...devices.map((d) => {
+      ...state.devices.map((d) => {
         const option = document.createElement('option');
         option.value = d.id;
         option.textContent = d.state === 'device' ? d.name : `${d.name} (${d.state})`;
         return option;
       }),
     );
-    if (!devices.length) {
+    if (!state.devices.length) {
       const option = document.createElement('option');
       option.textContent = 'No devices';
       option.disabled = true;
       select.append(option);
     }
   }
-  if (activeId) {
-    select.value = activeId;
+  if (state.activeId) {
+    select.value = state.activeId;
   }
-  select.disabled = !devices.length;
-  toggle.disabled = !devices.length && !activeId;
-  toggle.textContent = activeId ? 'Stop' : 'Start';
-  toggle.classList.toggle('primary', !activeId);
-  if (!activeId && document.body.dataset.state !== 'error' && document.body.dataset.state !== 'connecting') {
-    showMessage(devices.length ? 'Select a device and press Start.' : noDevicesHint);
-  }
+  const running = !!state.activeId;
+  select.disabled = !state.devices.length;
+  toggle.disabled = !state.devices.length && !running;
+  toggle.classList.toggle('running', running);
+  const label = running ? 'Stop mirroring' : 'Start mirroring';
+  toggle.title = label;
+  toggle.setAttribute('aria-label', label);
 }
 
 select.addEventListener('change', () => {
-  if (activeId && select.value !== activeId) {
+  if (state.activeId && select.value !== state.activeId) {
     send({ type: 'select', deviceId: select.value });
   }
 });
 
 toggle.addEventListener('click', () => {
-  if (activeId) {
+  if (state.activeId) {
     send({ type: 'stop' });
   } else if (select.value) {
     send({ type: 'select', deviceId: select.value });
   }
 });
 
+showHere.addEventListener('click', () => send({ type: 'showHere' }));
+
 // ---- toolbar buttons: press on pointerdown, release on pointerup so long-press works ----
 
 buttons.addEventListener('pointerdown', (e) => {
   const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-button]');
-  if (!target || !activeId) {
+  if (!target || !state.activeId || !state.surfaceActive) {
     return;
   }
   const button = target.dataset.button as DeviceButton;
@@ -197,10 +243,22 @@ const endPointer = (e: PointerEvent) => {
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 
+// Hovering over the screen wakes the device. The host throttles and checks the setting.
+let lastWake = 0;
+const wake = () => {
+  const now = Date.now();
+  if (state.activeId && state.surfaceActive && now - lastWake > 1000) {
+    lastWake = now;
+    send({ type: 'wake' });
+  }
+};
+canvas.addEventListener('pointerenter', wake);
+canvas.addEventListener('pointermove', wake);
+
 canvas.addEventListener('contextmenu', (e) => {
   // Right click = back, like scrcpy.
   e.preventDefault();
-  if (activeId) {
+  if (state.activeId) {
     send({ type: 'button', button: 'back', action: 'press' });
   }
 });
@@ -232,7 +290,7 @@ canvas.addEventListener(
 const keysDown = new Set<string>();
 
 canvas.addEventListener('keydown', (e) => {
-  if (!activeId) {
+  if (!state.activeId) {
     return;
   }
   const isShortcut = e.ctrlKey || e.metaKey || e.altKey;
@@ -264,7 +322,7 @@ canvas.addEventListener('blur', () => {
 
 document.addEventListener('paste', (e) => {
   const text = e.clipboardData?.getData('text/plain');
-  if (activeId && text && document.activeElement === canvas) {
+  if (state.activeId && text && document.activeElement === canvas) {
     e.preventDefault();
     send({ type: 'text', text });
   }
@@ -274,4 +332,5 @@ function mods(e: KeyboardEvent) {
   return { shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey, meta: e.metaKey };
 }
 
+render();
 send({ type: 'ready' });
