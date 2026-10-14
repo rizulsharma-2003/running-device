@@ -9,3 +9,6 @@ dist/smoke-test.js
 **/tsconfig.json
 esbuild.mjs
 .gitignore
+CONTRIBUTING.md
+media/logo.svg
+package-lock.json

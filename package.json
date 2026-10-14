@@ -1,10 +1,15 @@
 {
   "name": "running-devices",
   "displayName": "Running Devices",
-  "description": "Mirror and control connected Android devices inside VS Code, like Android Studio's Running Devices window.",
+  "description": "Mirror and control your Android device inside VS Code, like Android Studio's Running Devices window.",
   "version": "0.1.0",
   "publisher": "insideedge",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#3F4FE0",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -14,9 +19,13 @@
   "keywords": [
     "android",
     "adb",
+    "screen mirroring",
     "mirror",
+    "emulator",
+    "device",
     "scrcpy",
-    "device"
+    "running devices",
+    "remote control"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [],
@@ -114,7 +123,7 @@
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview",
-    "package": "npm run typecheck && node esbuild.mjs --production && vsce package",
+    "package": "npm run typecheck && node esbuild.mjs --production && vsce package --allow-missing-repository",
     "vscode:prepublish": "node esbuild.mjs --production"
   },
   "devDependencies": {

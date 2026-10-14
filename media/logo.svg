@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B4BF5"/>
+      <stop offset="1" stop-color="#14B8D4"/>
+    </linearGradient>
+    <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E1B4B"/>
+      <stop offset="1" stop-color="#0E3A4A"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0B1030" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+
+  <!-- mirrored copy (the live mirror) -->
+  <g opacity="0.55">
+    <rect x="452" y="214" width="300" height="540" rx="62" fill="#FFFFFF" fill-opacity="0.16" stroke="#FFFFFF" stroke-width="22"/>
+  </g>
+
+  <!-- streaming chevrons between device and mirror -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <path d="M640 470 l44 44 l-44 44"/>
+  </g>
+
+  <!-- physical device -->
+  <g filter="url(#sh)">
+    <rect x="272" y="290" width="300" height="540" rx="62" fill="#FFFFFF"/>
+    <rect x="296" y="314" width="252" height="492" rx="42" fill="url(#scr)"/>
+    <rect x="382" y="334" width="80" height="18" rx="9" fill="#FFFFFF" fill-opacity="0.85"/>
+    <!-- play/stream glyph on screen -->
+    <path d="M396 506 L396 618 L486 562 Z" fill="#FFFFFF" fill-opacity="0.95" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+
+  <!-- LIVE indicator -->
+  <circle cx="752" cy="214" r="74" fill="#FF3B5C" fill-opacity="0.25"/>
+  <circle cx="752" cy="214" r="46" fill="#FF3B5C" stroke="#FFFFFF" stroke-width="14"/>
+</svg>
