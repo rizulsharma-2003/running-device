@@ -25,6 +25,19 @@ If only one device is connected, mirroring starts automatically. Otherwise pick 
 
 Everything beyond the toolbar is in the **⋯** menu and in the Command Palette under *Running Devices*.
 
+## Flutter
+
+Working on a Flutter app? When it runs on the mirrored device (started from VS Code with the Flutter extension), a **Flutter bar** appears above the screen:
+
+- **Hot reload** and **Hot restart**, with live status: *Hot reloading…* → *Reloaded in 312 ms*. Hot reloads on save show up too.
+- **Restart** and **Stop** the app.
+- **Inspect widget**: turn it on, tap any widget on the mirrored screen, and VS Code jumps to its code.
+- **DevTools**, plus debug painting, performance overlay, slow animations and more under **⋯**.
+
+If the app isn't running yet, the bar offers **Run on this device**. It uses your `launch.json` configuration when you have one.
+
+Requires the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter).
+
 ## Put it anywhere
 
 Use the buttons in the panel's title bar:

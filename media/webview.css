@@ -211,6 +211,190 @@ body.narrow .power-toggle {
   height: 34px;
 }
 
+/* ───────────── Flutter bar ───────────── */
+
+.flutter-bar {
+  --flutter: #42a5f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--flutter) 9%, transparent), transparent 70%);
+}
+
+.flutter-bar[hidden] {
+  display: none;
+}
+
+.flutter-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.flutter-logo {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.flutter-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.flutter-name,
+.flutter-status {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.flutter-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.flutter-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.flutter-status::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fg) 35%, transparent);
+}
+
+.flutter-bar[data-phase='running'] .flutter-status::before {
+  background: var(--live);
+}
+
+.flutter-bar[data-phase='starting'] .flutter-status::before,
+.flutter-bar[data-phase='reloading'] .flutter-status::before,
+.flutter-bar[data-phase='restarting'] .flutter-status::before {
+  background: #ffc107;
+  animation: pulse 0.9s ease-in-out infinite;
+}
+
+.flutter-bar.has-result .flutter-status {
+  color: var(--live);
+}
+
+.flutter-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.flutter-actions .sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--hairline);
+}
+
+.flutter-bar .when-running,
+.flutter-bar .when-stopped {
+  display: none;
+}
+
+.flutter-bar:not([data-phase='stopped']) .when-running {
+  display: flex;
+}
+
+.flutter-bar[data-phase='stopped'] .when-stopped {
+  display: inline-flex;
+}
+
+.flutter-bar[data-phase='starting'] .flutter-actions .btn {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.flutter-bar .hot-reload {
+  color: #ffb300;
+}
+
+.flutter-bar .hot-reload:hover:not(:disabled) {
+  color: #ffc107;
+  background: color-mix(in srgb, #ffc107 16%, transparent);
+}
+
+.flutter-bar[data-phase='reloading'] .hot-reload .icon,
+.flutter-bar[data-phase='restarting'] [data-flutter='hotRestart'] .icon {
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
+.flutter-stop:hover:not(:disabled) {
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 14%, transparent);
+}
+
+.flutter-inspect.active {
+  color: var(--flutter);
+  background: color-mix(in srgb, var(--flutter) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--flutter) 45%, transparent);
+}
+
+.run-pill {
+  flex: none;
+  height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 9px;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #0277bd, #29b6f6);
+  box-shadow: 0 5px 14px -7px rgba(2, 119, 189, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: filter 0.15s, transform 0.1s var(--ease);
+}
+
+.run-pill:hover {
+  filter: brightness(1.08);
+}
+
+.run-pill:active {
+  transform: scale(0.96);
+}
+
+.run-pill .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* Narrow panels: icons only. */
+body.narrow .flutter-text {
+  display: none;
+}
+
+body.narrow .flutter-bar {
+  padding-left: 10px;
+}
+
+body.narrow .flutter-actions .sep {
+  margin: 0 2px;
+}
+
+body.narrow .flutter-actions .btn {
+  width: 26px;
+}
+
 /* ───────────── buttons ───────────── */
 
 .btn {

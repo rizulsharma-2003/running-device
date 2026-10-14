@@ -43,7 +43,22 @@ export type HostMessage =
   | { type: 'recording'; since: number | null }
   | { type: 'toggleStats' }
   /** Short notice shown over the screen. */
-  | { type: 'toast'; text: string };
+  | { type: 'toast'; text: string }
+  /** Flutter app controls for the mirrored device; null hides the bar. */
+  | { type: 'flutter'; state: FlutterState | null };
+
+export type FlutterAction = 'run' | 'hotReload' | 'hotRestart' | 'restart' | 'stop' | 'inspect' | 'devtools' | 'more';
+
+export interface FlutterState {
+  appName: string;
+  phase: 'stopped' | 'starting' | 'running' | 'reloading' | 'restarting';
+  /** debug / profile / release */
+  mode?: string;
+  /** Result of the last reload, e.g. "Reloaded in 312 ms". */
+  message?: string;
+  /** Widget select mode is on: tapping the screen picks a widget. */
+  inspecting: boolean;
+}
 
 /** Toolbar actions handled by the extension host. */
 export type ToolbarAction = 'screenshot' | 'record' | 'menu' | 'pairWifi' | 'showLog';
@@ -60,6 +75,7 @@ export type WebviewMessage =
   /** Pointer is over the screen: wake the device if it's asleep. */
   | { type: 'wake' }
   | { type: 'action'; action: ToolbarAction }
+  | { type: 'flutter'; action: FlutterAction }
   /** Files dropped on the screen: workspace/Explorer URIs, or file contents from the OS. */
   | { type: 'dropUris'; uris: string[] }
   | { type: 'dropFile'; name: string; data: Uint8Array }

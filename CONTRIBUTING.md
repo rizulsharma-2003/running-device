@@ -54,6 +54,7 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | [src/recorder.ts](src/recorder.ts) | Annex B → MP4 muxing of the mirror stream |
 | [src/logcat.ts](src/logcat.ts) | Logcat pseudo-terminal with per-app pid tracking |
 | [src/wifi.ts](src/wifi.ts) | QR / code pairing over mDNS, switch to Wi-Fi |
+| [src/flutter.ts](src/flutter.ts) | Flutter bar: finds the Dart-Code debug session on the mirrored device and drives hot reload, restart, inspector |
 | [src/backend.ts](src/backend.ts) | Platform-neutral `DeviceBackend` / `MirrorSession` interfaces |
 | [src/android/adb.ts](src/android/adb.ts) | adb discovery and commands |
 | [src/android/scrcpy/](src/android/scrcpy/) | scrcpy v5.0.1 wire protocol, socket handling, demuxing |

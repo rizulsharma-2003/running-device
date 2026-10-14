@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { DeviceInfo, HostMessage, VideoCodec, WebviewMessage } from '../shared/messages';
+import type { DeviceInfo, FlutterAction, FlutterState, HostMessage, VideoCodec, WebviewMessage } from '../shared/messages';
 import type { DeviceBackend, InputMessage, MirrorOptions, MirrorSession } from './backend';
 import { Mp4Recorder } from './recorder';
 
@@ -54,6 +54,12 @@ export class MirrorController implements vscode.Disposable {
 
   /** Set by the extension: handles toolbar actions and drops. */
   onAction: (msg: ActionMessage) => void = () => undefined;
+  /** Flutter bar buttons. */
+  onFlutter: (action: FlutterAction) => void = () => undefined;
+  /** The mirrored device changed (or mirroring stopped). */
+  onDeviceChanged: () => void = () => undefined;
+  private flutterState: FlutterState | null = null;
+
   /** Handles the rotate button (needs adb, so it lives with the device actions). */
   onRotate: () => void = () => undefined;
   /** Called when a recording stops without the user asking (rotation, disconnect). */
@@ -119,6 +125,7 @@ export class MirrorController implements vscode.Disposable {
     surface.post({ type: 'devices', devices: this.devices, activeId: this.activeId });
     surface.post(this.status);
     surface.post({ type: 'recording', since: this.recordingSince });
+    surface.post({ type: 'flutter', state: this.flutterState });
     if (active && this.session) {
       if (this.stream) surface.post(this.stream);
       if (this.videoSize) surface.post(this.videoSize);
@@ -160,6 +167,9 @@ export class MirrorController implements vscode.Disposable {
         break;
       case 'refresh':
         void this.refresh();
+        break;
+      case 'flutter':
+        this.onFlutter(msg.action);
         break;
       case 'action':
       case 'dropUris':
@@ -360,6 +370,11 @@ export class MirrorController implements vscode.Disposable {
     this.session?.sendInput(msg);
   }
 
+  setFlutter(state: FlutterState | null) {
+    this.flutterState = state;
+    this.broadcast({ type: 'flutter', state });
+  }
+
   toast(text: string) {
     this.active?.post({ type: 'toast', text });
   }
@@ -378,6 +393,7 @@ export class MirrorController implements vscode.Disposable {
     this.activeId = id;
     void vscode.commands.executeCommand('setContext', 'runningDevices.mirroring', !!id);
     this.broadcast({ type: 'devices', devices: this.devices, activeId: id });
+    this.onDeviceChanged();
   }
 
   private options(): MirrorOptions {

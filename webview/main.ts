@@ -1,4 +1,4 @@
-import type { DeviceButton, DeviceInfo, HostMessage, ToolbarAction, WebviewMessage } from '../shared/messages';
+import type { DeviceButton, DeviceInfo, FlutterAction, FlutterState, HostMessage, ToolbarAction, WebviewMessage } from '../shared/messages';
 import { icon, type IconName } from '../src/html';
 import { VideoRenderer } from './decoder';
 
@@ -18,6 +18,9 @@ const frame = $<HTMLDivElement>('device-frame');
 const controls = $<HTMLElement>('controls');
 const handle = $<HTMLDivElement>('handle');
 const toast = $<HTMLDivElement>('toast');
+const flutterBar = $<HTMLElement>('flutter-bar');
+const flutterName = $<HTMLSpanElement>('flutter-name');
+const flutterStatus = $<HTMLSpanElement>('flutter-status');
 const skeletonText = $<HTMLSpanElement>('skeleton-text');
 const card = $<HTMLElement>('card');
 const cardTitle = $<HTMLHeadingElement>('card-title');
@@ -91,6 +94,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       return;
     case 'toast':
       showToast(msg.text);
+      return;
+    case 'flutter':
+      renderFlutter(msg.state);
       return;
     case 'packet':
       bytesThisSecond += msg.data?.byteLength ?? 0;
@@ -378,6 +384,39 @@ function layout() {
   body.classList.toggle('controls-overlay', mode === 'overlay');
 }
 
+// ---- Flutter bar ----
+
+const PHASE_TEXT: Record<FlutterState['phase'], string> = {
+  stopped: 'Not running',
+  starting: 'Starting…',
+  running: 'Running',
+  reloading: 'Hot reloading…',
+  restarting: 'Hot restarting…',
+};
+
+function renderFlutter(f: FlutterState | null) {
+  const wasHidden = flutterBar.hidden;
+  flutterBar.hidden = !f;
+  if (f) {
+    flutterBar.dataset.phase = f.phase;
+    flutterName.textContent = f.appName;
+    const mode = f.mode && f.mode !== 'debug' ? ` · ${f.mode}` : '';
+    flutterStatus.textContent = f.message ?? PHASE_TEXT[f.phase] + (f.phase === 'running' ? mode : '');
+    flutterBar.classList.toggle('has-result', !!f.message);
+    const inspect = flutterBar.querySelector<HTMLButtonElement>('.flutter-inspect')!;
+    inspect.classList.toggle('active', f.inspecting);
+    inspect.dataset.tip = f.inspecting ? 'Stop inspecting' : 'Inspect widget · then tap the screen';
+  }
+  if (wasHidden !== flutterBar.hidden) layout();
+}
+
+flutterBar.addEventListener('click', (e) => {
+  const target = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-flutter]');
+  if (target) {
+    send({ type: 'flutter', action: target.dataset.flutter as FlutterAction });
+  }
+});
+
 // ---- toast ----
 
 let toastTimer: number | undefined;
@@ -414,7 +453,9 @@ handle.addEventListener('pointerleave', (e) => {
   if (!controls.contains(e.relatedTarget as Node)) scheduleHide();
 });
 
-new ResizeObserver(() => layout()).observe(body);
+const resizeObserver = new ResizeObserver(() => layout());
+resizeObserver.observe(body);
+resizeObserver.observe(stage);
 
 // ---- recording indicator ----
 

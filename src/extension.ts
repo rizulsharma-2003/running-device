@@ -3,6 +3,7 @@ import { Adb, resolveAdbPath } from './android/adb';
 import { AndroidBackend } from './android/androidBackend';
 import { DeviceTools } from './android/deviceTools';
 import { DeviceActions } from './actions';
+import { FlutterIntegration } from './flutter';
 import { MirrorController } from './mirrorController';
 import { DevicePanel, DevicesViewProvider } from './surfaces';
 
@@ -17,11 +18,18 @@ export function activate(context: vscode.ExtensionContext) {
   const controller = new MirrorController(backends, output);
   const panel = new DevicePanel(context.extensionUri, controller);
   const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri);
+  const flutter = new FlutterIntegration(
+    () => controller.activeDeviceId,
+    (state) => controller.setFlutter(state),
+  );
+  controller.onFlutter = (action) => void flutter.run(action);
+  controller.onDeviceChanged = () => flutter.update();
 
   const focusView = () => vscode.commands.executeCommand(`${DevicesViewProvider.viewId}.focus`);
 
   context.subscriptions.push(
     ...actions.register(),
+    flutter,
     output,
     controller,
     vscode.window.registerWebviewViewProvider(

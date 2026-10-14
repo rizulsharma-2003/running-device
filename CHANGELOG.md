@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- **Flutter controls**: when a Flutter app from VS Code runs on the mirrored device, a Flutter bar appears with hot reload, hot restart, restart, stop, widget inspector and DevTools, plus live status ("Hot reloading…", "Reloaded in 312 ms"). Hot reloads on save show up there too.
+- **Run on this device**: in a Flutter project, start the app on the mirrored device in one click (uses your launch configuration if you have one)
+- **Inspect widget**: turn on select mode, tap a widget on the mirrored screen, and jump to its code
+- Visual debugging toggles (debug painting, performance overlay, slow animations, repaint rainbow) and DevTools pages in the Flutter ⋯ menu
+
 ## 0.4.0
 
 A complete visual redesign.

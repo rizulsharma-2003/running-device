@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror, control, record and debug your Android device right inside VS Code.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -22,6 +22,8 @@
     "apk",
     "device",
     "emulator",
+    "flutter",
+    "hot reload",
     "logcat",
     "mirror",
     "remote control",
@@ -34,7 +36,8 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onWebviewPanel:runningDevices.panel"
+    "onWebviewPanel:runningDevices.panel",
+    "onDebugResolve:dart"
   ],
   "contributes": {
     "viewsContainers": {
