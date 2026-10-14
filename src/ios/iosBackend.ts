@@ -69,7 +69,7 @@ export class IosBackend implements DeviceBackend {
         name: d.name,
         platform: 'ios',
         state: 'device',
-        detail: [details?.osVersion ? `iOS ${details.osVersion}` : 'iOS', 'USB'].join(' · '),
+        detail: [details?.osVersion ? `iOS ${details.osVersion}` : 'iOS', 'USB', 'View only'].join(' · '),
         controls: false,
       };
     });

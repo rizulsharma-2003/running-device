@@ -620,8 +620,18 @@ function sendPointer(e: PointerEvent, action: 'down' | 'move' | 'up') {
   });
 }
 
+let viewOnlyHintAt = 0;
+
 canvas.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || !canControl()) {
+  if (e.button === 0 && !canControl() && state.activeId) {
+    // Explain instead of silently ignoring the click.
+    if (Date.now() - viewOnlyHintAt > 4000) {
+      viewOnlyHintAt = Date.now();
+      showToast('iPhone mirroring is view-only: iOS doesn’t accept taps from a Mac. Use the phone to interact.');
+    }
+    return;
+  }
+  if (e.button !== 0) {
     return;
   }
   canvas.focus();
