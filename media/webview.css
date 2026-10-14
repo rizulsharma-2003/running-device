@@ -1,274 +1,805 @@
+/* Running Devices webview.
+   Every color derives from the VS Code theme (light, dark, high contrast);
+   the brand gradient is used sparingly for the primary action and the live glow. */
+
+:root {
+  --fg: var(--vscode-foreground);
+  --muted: var(--vscode-descriptionForeground);
+  --icon: var(--vscode-icon-foreground, var(--vscode-foreground));
+  --bg: var(--vscode-sideBar-background, var(--vscode-editor-background));
+
+  --surface: color-mix(in srgb, var(--fg) 5%, transparent);
+  --surface-hover: color-mix(in srgb, var(--fg) 10%, transparent);
+  --surface-active: color-mix(in srgb, var(--fg) 15%, transparent);
+  --hairline: var(--vscode-contrastBorder, color-mix(in srgb, var(--fg) 11%, transparent));
+  --glass: color-mix(in srgb, var(--bg) 78%, transparent);
+
+  --brand-a: #6e5bff;
+  --brand-b: #18b6d8;
+  --brand: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+  --live: #3fb950;
+  --warn: #d29922;
+  --danger: var(--vscode-errorForeground, #f85149);
+  --rec: #ff4d6a;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --shadow-float: 0 8px 24px -10px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.18);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.vscode-light {
+  --shadow-float: 0 8px 24px -12px rgba(15, 20, 40, 0.25), 0 1px 3px rgba(15, 20, 40, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
-  padding: 0;
   overflow: hidden;
 }
 
 body {
   display: flex;
   flex-direction: column;
-  color: var(--vscode-foreground);
-  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  color: var(--fg);
+  background: var(--bg);
   font-family: var(--vscode-font-family);
-  font-size: var(--vscode-font-size);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
 }
-
-/* ---- toolbars ---- */
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-}
-
-.toolbar.controls {
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 2px 6px;
-  padding-top: 0;
-}
-
-.group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-/* Thin divider between groups, like VS Code toolbars. */
-.group + .group::before {
-  content: '';
-  width: 1px;
-  height: 16px;
-  margin: 0 4px 0 2px;
-  background: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
-}
-
-body:not(.live) .controls .icon-button {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-select {
-  flex: 1;
-  min-width: 0;
-  height: 26px;
-  padding: 0 4px;
-  color: var(--vscode-dropdown-foreground);
-  background: var(--vscode-dropdown-background);
-  border: 1px solid var(--vscode-dropdown-border, transparent);
-  border-radius: 4px;
-  font: inherit;
-}
-
-/* ---- buttons ---- */
 
 button {
   font: inherit;
+  color: inherit;
   cursor: pointer;
-}
-
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  background: transparent;
-  border: none;
-  border-radius: 5px;
-}
-
-.icon-button:hover {
-  background: var(--vscode-toolbar-hoverBackground);
-}
-
-.icon-button:active {
-  background: var(--vscode-toolbar-activeBackground, var(--vscode-toolbar-hoverBackground));
-}
-
-.icon-button:disabled {
-  opacity: 0.4;
-  cursor: default;
-  background: transparent;
 }
 
 .icon {
   width: 16px;
   height: 16px;
   display: block;
+  flex: none;
 }
 
-/* Start/stop toggle: play icon in the button color when stopped, stop icon in red when running. */
-.toggle .when-running,
-.toggle.running .when-stopped {
+:focus-visible {
+  outline: 1.5px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+
+/* ───────────── top bar ───────────── */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* Device picker: a styled chip over a transparent native <select>. */
+.picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.picker:hover {
+  background: var(--surface-hover);
+}
+
+.picker:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.picker select:disabled {
+  cursor: default;
+}
+
+.status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fg) 30%, transparent);
+  transition: background 0.2s;
+}
+
+body.has-device .status-dot {
+  background: color-mix(in srgb, var(--fg) 55%, transparent);
+}
+
+body[data-state='connecting'] .status-dot {
+  background: var(--warn);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+body[data-state='streaming'] .status-dot {
+  background: var(--live);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 22%, transparent);
+}
+
+body[data-state='error'] .status-dot {
+  background: var(--danger);
+}
+
+.picker-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.picker-name,
+.picker-meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.picker-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.picker-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.picker-meta:empty {
   display: none;
 }
 
-.toggle.running .when-running {
+.picker-chevron {
+  color: var(--muted);
+}
+
+/* Narrow panels: give the device name room. */
+body.narrow .topbar {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+body.narrow .picker {
+  padding: 0 8px 0 10px;
+  gap: 8px;
+}
+
+body.narrow .picker-chevron {
+  display: none;
+}
+
+body.narrow .segmented {
+  gap: 0;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+}
+
+body.narrow .segmented .btn {
+  width: 28px;
+}
+
+body.narrow .power-toggle {
+  width: 34px;
+  height: 34px;
+}
+
+/* ───────────── buttons ───────────── */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--icon);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease), transform 0.1s var(--ease), opacity 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--surface-active);
+  transform: scale(0.92);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.segmented {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.record.recording {
+  width: auto;
+  padding: 0 9px 0 7px;
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 14%, transparent);
+}
+
+.record.recording:hover:not(:disabled) {
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 22%, transparent);
+}
+
+.record.recording .icon {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+#record-time {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+#record-time:empty {
+  display: none;
+}
+
+/* Primary start / stop. */
+.power-toggle {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--brand);
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--brand-a) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s var(--ease), filter 0.15s, box-shadow 0.2s, background 0.2s;
+}
+
+.power-toggle:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.power-toggle:active:not(:disabled) {
+  transform: scale(0.93);
+}
+
+.power-toggle:disabled {
+  background: var(--surface-active);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: default;
+}
+
+.power-toggle .when-running,
+.power-toggle.running .when-stopped {
+  display: none;
+}
+
+.power-toggle.running .when-running {
   display: block;
 }
 
-.toggle {
-  color: var(--vscode-debugIcon-startForeground, #89d185);
+.power-toggle.running {
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 13%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rec) 35%, transparent);
 }
 
-.toggle.running {
-  color: var(--vscode-debugIcon-stopForeground, #f48771);
-}
-
-.text-button {
-  height: 26px;
-  padding: 0 12px;
-  color: var(--vscode-button-foreground);
-  background: var(--vscode-button-background);
-  border: none;
-  border-radius: 4px;
-}
-
-.text-button:hover {
-  background: var(--vscode-button-hoverBackground);
-}
-
-button:focus-visible,
-select:focus-visible,
-canvas:focus-visible {
-  outline: 1px solid var(--vscode-focusBorder);
-  outline-offset: -1px;
-}
-
-/* ---- screen ---- */
+/* ───────────── stage & device ───────────── */
 
 #stage {
   position: relative;
   flex: 1;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
+  display: grid;
+  place-items: center;
+  padding: 18px 14px 16px;
+  overflow: hidden;
 }
 
-/* A canvas is a replaced element, so max-width + max-height keep its aspect ratio. */
-#screen {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 12px;
-  background: #000;
-  touch-action: none;
-  cursor: default;
+#stage > * {
+  grid-area: 1 / 1;
 }
 
-body:not([data-state='streaming']) #screen,
-body.elsewhere #screen {
-  visibility: hidden;
-}
-
-#overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  text-align: center;
+/* Soft brand glow behind the device while it's live. */
+.glow {
+  width: 70%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-a) 55%, transparent), transparent),
+    radial-gradient(closest-side at 70% 70%, color-mix(in srgb, var(--brand-b) 45%, transparent), transparent);
+  filter: blur(48px);
+  opacity: 0;
+  transition: opacity 0.8s var(--ease);
   pointer-events: none;
 }
 
-#overlay[hidden],
-#overlay [hidden] {
+body.live .glow {
+  opacity: 0.32;
+}
+
+body.vscode-light.live .glow {
+  opacity: 0.22;
+}
+
+.device-layout {
+  display: grid;
+  grid-template-areas:
+    'device rail'
+    'dock   .';
+  align-items: center;
+  justify-items: center;
+  gap: 14px 12px;
+}
+
+body.centered .device-layout {
+  grid-template-columns: var(--rail-w) auto var(--rail-w);
+  grid-template-areas:
+    '. device rail'
+    '. dock   .';
+}
+
+body.narrow .device-layout {
+  grid-template-areas:
+    'device'
+    'dock'
+    'rail';
+  gap: 10px;
+}
+
+body[data-view='card'] .device-layout {
   display: none;
 }
 
-#overlay button {
-  pointer-events: auto;
+/* The phone: a dark bezel whose size and radius are set from script to fit the panel. */
+.device {
+  grid-area: device;
+  position: relative;
+  width: 240px;
+  height: 520px;
+  padding: var(--bezel, 9px);
+  border-radius: var(--frame-radius, 34px);
+  background: linear-gradient(150deg, #30333b 0%, #121318 38%, #0b0c0f 62%, #24272e 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 28px 60px -22px rgba(0, 0, 0, 0.6),
+    0 12px 24px -14px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.3s var(--ease);
 }
 
-#message {
-  margin: 0;
-  color: var(--vscode-descriptionForeground);
+body.vscode-light .device {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 28px 50px -24px rgba(20, 24, 50, 0.45),
+    0 10px 20px -14px rgba(20, 24, 50, 0.3);
 }
 
-#message.error {
-  color: var(--vscode-errorForeground);
+#screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--screen-radius, 26px);
+  background: #000;
+  touch-action: none;
+  cursor: default;
+  outline: none;
 }
 
-/* ---- capture actions ---- */
+body:not(.live) #screen {
+  visibility: hidden;
+}
 
-.divider {
+/* Loading state inside the bezel. */
+.skeleton {
+  position: absolute;
+  inset: var(--bezel, 9px);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--screen-radius, 26px);
+  background: linear-gradient(110deg, #0f1014 30%, #1b1d23 50%, #0f1014 70%);
+  background-size: 250% 100%;
+  animation: shimmer 1.8s linear infinite;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+body[data-view='device']:not(.live) .skeleton {
+  display: flex;
+}
+
+.skeleton-text {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--brand-b);
+  border-right-color: var(--brand-a);
+  animation: spin 0.8s linear infinite;
+}
+
+/* ───────────── dock & rail ───────────── */
+
+.dock,
+.rail {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: var(--shadow-float);
+  transition: opacity 0.2s var(--ease);
+}
+
+.dock {
+  grid-area: dock;
+  gap: 6px;
+  border-radius: 999px;
+}
+
+.dock .btn {
+  width: 36px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.rail {
+  grid-area: rail;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 14px;
+}
+
+.rail-sep {
+  width: 16px;
+  height: 1px;
+  margin: 3px 0;
+  background: var(--hairline);
+}
+
+body.narrow .rail {
+  flex-direction: row;
+  border-radius: 999px;
+}
+
+body.narrow .rail-sep {
   width: 1px;
   height: 16px;
-  margin: 0 2px;
-  background: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
+  margin: 0 3px;
 }
 
-.record.recording {
-  width: auto;
-  gap: 5px;
-  padding: 0 7px 0 5px;
-  color: var(--vscode-debugIcon-stopForeground, #f48771);
-  background: color-mix(in srgb, var(--vscode-debugIcon-stopForeground, #f48771) 15%, transparent);
+body.narrow .rail .btn {
+  border-radius: 999px;
 }
 
-.record.recording .icon {
-  animation: rec-pulse 1.4s ease-in-out infinite;
+body:not(.live) .dock,
+body:not(.live) .rail {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
-#record-time {
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
+/* ───────────── overlays ───────────── */
 
-@keyframes rec-pulse {
-  50% {
-    opacity: 0.35;
-  }
-}
-
-/* ---- performance stats ---- */
-
-#stats {
+.stats {
   position: absolute;
-  top: 14px;
+  top: calc(var(--bezel, 9px) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  padding: 3px 9px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 11, 14, 0.62);
+  backdrop-filter: blur(8px);
   color: #fff;
-  background: rgba(0, 0, 0, 0.6);
   font-family: var(--vscode-editor-font-family, monospace);
-  font-size: 11px;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   pointer-events: none;
 }
 
-#stats[hidden] {
+.stats[hidden] {
   display: none;
 }
 
-/* ---- drop target ---- */
-
-#drop-hint {
+.drop-hint {
   position: absolute;
-  inset: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 12px;
+  display: grid;
+  place-items: center;
   padding: 24px;
+  border: 1.5px dashed var(--vscode-focusBorder);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  backdrop-filter: blur(10px);
   text-align: center;
-  border: 2px dashed var(--vscode-focusBorder);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
   pointer-events: none;
 }
 
-#drop-hint[hidden] {
+.drop-hint small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.drop-hint[hidden] {
   display: none;
+}
+
+/* ───────────── empty-state card ───────────── */
+
+.card {
+  width: min(300px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 22px 22px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  text-align: center;
+  animation: rise 0.35s var(--ease);
+}
+
+.card[hidden] {
+  display: none;
+}
+
+.hero-art {
+  width: 64px;
+  height: 64px;
+}
+
+.card.error .hero-art {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.card h2 {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.card.error h2 {
+  color: var(--danger);
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.card-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.cta {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  transition: filter 0.15s, background 0.15s, transform 0.1s var(--ease);
+}
+
+.cta[hidden] {
+  display: none;
+}
+
+.cta:active {
+  transform: scale(0.97);
+}
+
+.cta.primary {
+  border: none;
+  color: #fff;
+  background: var(--brand);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--brand-a) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.cta.primary:hover {
+  filter: brightness(1.08);
+}
+
+.cta.ghost {
+  border: 1px solid var(--hairline);
+  background: transparent;
+}
+
+.cta.ghost:hover {
+  background: var(--surface-hover);
+}
+
+/* ───────────── tooltips ───────────── */
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 10;
+  padding: 4px 8px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--hairline));
+  border-radius: 6px;
+  background: var(--vscode-editorHoverWidget-background, var(--bg));
+  color: var(--vscode-editorHoverWidget-foreground, var(--fg));
+  box-shadow: var(--shadow-float);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s var(--ease);
+}
+
+[data-tip]:hover::after {
+  opacity: 1;
+  transition-delay: 0.45s;
+}
+
+[data-tip]:active::after,
+[data-tip]:disabled::after {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+[data-tip-side='bottom']::after {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, -3px);
+}
+
+[data-tip-side='bottom']:hover::after {
+  transform: translate(-50%, 0);
+}
+
+/* Tooltips at the right edge open leftwards so they aren't clipped. */
+[data-tip-side='bottom'][data-tip-align='end']::after {
+  left: auto;
+  right: 0;
+  transform: translateY(-3px);
+}
+
+[data-tip-side='bottom'][data-tip-align='end']:hover::after {
+  transform: none;
+}
+
+[data-tip-side='top']::after {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, 3px);
+}
+
+[data-tip-side='top']:hover::after {
+  transform: translate(-50%, 0);
+}
+
+[data-tip-side='left']::after {
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translate(3px, -50%);
+}
+
+[data-tip-side='left']:hover::after {
+  transform: translate(0, -50%);
+}
+
+body.narrow .rail [data-tip-side='left']::after {
+  right: auto;
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+/* ───────────── motion ───────────── */
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+body.narrow .segmented .record.recording {
+  width: auto;
+  padding: 0 7px 0 5px;
+  margin: 0 2px;
 }

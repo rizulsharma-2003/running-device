@@ -10,6 +10,8 @@ export interface DeviceInfo {
   platform: Platform;
   /** e.g. "device", "unauthorized", "offline" */
   state: string;
+  /** Short secondary line, e.g. "Android 13 · USB". */
+  detail?: string;
 }
 
 export type VideoCodec = 'h264' | 'h265' | 'av1';
@@ -42,7 +44,7 @@ export type HostMessage =
   | { type: 'toggleStats' };
 
 /** Toolbar actions handled by the extension host. */
-export type ToolbarAction = 'screenshot' | 'record' | 'menu';
+export type ToolbarAction = 'screenshot' | 'record' | 'menu' | 'pairWifi' | 'showLog';
 
 // ---- webview -> host ----
 

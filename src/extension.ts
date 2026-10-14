@@ -36,6 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
       },
     }),
     vscode.commands.registerCommand('runningDevices.refresh', () => controller.refresh()),
+    vscode.commands.registerCommand('runningDevices.showLog', () => output.show()),
     vscode.commands.registerCommand('runningDevices.stop', () => controller.stop()),
     vscode.commands.registerCommand('runningDevices.show', focusView),
     vscode.commands.registerCommand('runningDevices.openInEditor', () => panel.open()),

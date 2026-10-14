@@ -220,7 +220,7 @@ export class DeviceActions {
   private async handleWebviewAction(msg: ActionMessage) {
     try {
       if (msg.type === 'action') {
-        const command = { screenshot: 'screenshot', record: 'toggleRecording', menu: 'more' }[msg.action];
+        const command = ({ screenshot: 'screenshot', record: 'toggleRecording', menu: 'more', pairWifi: 'pairWifiQr', showLog: 'showLog' } as const)[msg.action];
         await vscode.commands.executeCommand(`runningDevices.${command}`);
         return;
       }

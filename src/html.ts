@@ -2,8 +2,8 @@
 
 /** One consistent icon set: 16×16 grid, 1.5px rounded strokes, currentColor. */
 const ICONS = {
-  play: '<path d="M5 3.8v8.4a.6.6 0 0 0 .9.5l6.6-4.2a.6.6 0 0 0 0-1L5.9 3.3a.6.6 0 0 0-.9.5z" fill="currentColor" stroke="none"/>',
-  stop: '<rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>',
+  play: '<path d="M5.5 3.9v8.2a.6.6 0 0 0 .92.5l6.3-4.1a.6.6 0 0 0 0-1L6.42 3.4a.6.6 0 0 0-.92.5z" fill="currentColor" stroke="none"/>',
+  stop: '<rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor" stroke="none"/>',
   back: '<path d="M11 3.5v9L4.5 8z"/>',
   home: '<circle cx="8" cy="8" r="4.5"/>',
   recents: '<rect x="3.5" y="3.5" width="9" height="9" rx="2"/>',
@@ -15,14 +15,30 @@ const ICONS = {
   record: '<circle cx="8" cy="8" r="5.25"/><circle cx="8" cy="8" r="2.5" fill="currentColor" stroke="none"/>',
   more: '<circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="1" fill="currentColor" stroke="none"/>',
   notifications: '<path d="M4.25 11V7.25a3.75 3.75 0 0 1 7.5 0V11l1 1.25h-9.5z"/><path d="M6.75 14h2.5"/>',
+  chevron: '<path d="m4.5 6.25 3.5 3.5 3.5-3.5"/>',
+  wifi: '<path d="M2 6.3a8.5 8.5 0 0 1 12 0"/><path d="M4.1 8.6a5.5 5.5 0 0 1 7.8 0"/><path d="M6.2 10.9a2.5 2.5 0 0 1 3.6 0"/><circle cx="8" cy="13" r=".6" fill="currentColor"/>',
+  refresh: '<path d="M13.25 8a5.25 5.25 0 1 1-1.54-3.71"/><path d="M13.25 2.75v2.5h-2.5"/>',
+  log: '<rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5 6l2 2-2 2M8.5 10.5h2.5"/>',
 } as const;
 
-export function icon(name: keyof typeof ICONS): string {
+export type IconName = keyof typeof ICONS;
+
+export function icon(name: IconName): string {
   return `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 }
 
-const iconButton = (button: string, title: string, iconName: keyof typeof ICONS) =>
-  `<button class="icon-button" data-button="${button}" title="${title}" aria-label="${title}">${icon(iconName)}</button>`;
+/** Device button with a custom tooltip; `tip` sets which side the tooltip opens on. */
+const deviceButton = (button: string, label: string, iconName: IconName, tip: 'top' | 'left' | 'bottom') =>
+  `<button class="btn" data-button="${button}" data-tip="${label}" data-tip-side="${tip}" aria-label="${label}">${icon(iconName)}</button>`;
+
+/** Illustration for empty states: a phone in the brand gradient. */
+const HERO = `<svg class="hero-art" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <defs><linearGradient id="hero-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6E5BFF"/><stop offset="1" stop-color="#18B6D8"/></linearGradient></defs>
+  <rect x="35" y="10" width="20" height="36" rx="5" stroke="url(#hero-g)" stroke-width="2.5" opacity=".45"/>
+  <rect x="13" y="16" width="22" height="40" rx="6" stroke="url(#hero-g)" stroke-width="2.5"/>
+  <path d="M21 21h6" stroke="url(#hero-g)" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M21.5 31.5v10l8-5z" fill="url(#hero-g)"/>
+</svg>`;
 
 export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: string; styleUri: string }): string {
   return /* html */ `<!DOCTYPE html>
@@ -34,42 +50,68 @@ export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: 
   <link href="${opts.styleUri}" rel="stylesheet">
 </head>
 <body data-state="idle">
-  <header class="toolbar">
-    <select id="device" title="Device" aria-label="Device"></select>
-    <button id="toggle" class="icon-button toggle" title="Start mirroring" aria-label="Start mirroring">
+  <header class="topbar">
+    <label class="picker">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span class="picker-text">
+        <span id="device-name" class="picker-name">No device</span>
+        <span id="device-meta" class="picker-meta"></span>
+      </span>
+      <span class="picker-chevron">${icon('chevron')}</span>
+      <select id="device" aria-label="Device"></select>
+    </label>
+    <div class="segmented" role="group" aria-label="Capture">
+      <button class="btn needs-stream" data-action="screenshot" data-tip="Screenshot" data-tip-side="bottom" aria-label="Take screenshot">${icon('screenshot')}</button>
+      <button class="btn needs-stream record" id="record" data-action="record" data-tip="Record screen" data-tip-side="bottom" aria-label="Record screen">${icon('record')}<span id="record-time"></span></button>
+      <button class="btn" data-action="menu" data-tip="More actions" data-tip-side="bottom" data-tip-align="end" aria-label="More actions">${icon('more')}</button>
+    </div>
+    <button id="toggle" class="power-toggle" data-tip="Start mirroring" data-tip-side="bottom" data-tip-align="end" aria-label="Start mirroring">
       <span class="when-stopped">${icon('play')}</span><span class="when-running">${icon('stop')}</span>
     </button>
-    <span class="divider"></span>
-    <button class="icon-button needs-stream" data-action="screenshot" title="Take screenshot" aria-label="Take screenshot">${icon('screenshot')}</button>
-    <button class="icon-button needs-stream record" id="record" data-action="record" title="Record screen" aria-label="Record screen">${icon('record')}<span id="record-time"></span></button>
-    <button class="icon-button" data-action="menu" title="More actions: apps, logcat, Wi-Fi, quick settings…" aria-label="More actions">${icon('more')}</button>
   </header>
-  <nav class="toolbar controls" id="buttons" aria-label="Device controls">
-    <div class="group">
-      ${iconButton('back', 'Back (Esc, right-click)', 'back')}
-      ${iconButton('home', 'Home', 'home')}
-      ${iconButton('recents', 'Overview', 'recents')}
-    </div>
-    <div class="group">
-      ${iconButton('volumeDown', 'Volume down', 'volumeDown')}
-      ${iconButton('volumeUp', 'Volume up', 'volumeUp')}
-    </div>
-    <div class="group">
-      ${iconButton('power', 'Power (hold for power menu)', 'power')}
-      ${iconButton('rotate', 'Rotate', 'rotate')}
-      ${iconButton('notifications', 'Notifications', 'notifications')}
-    </div>
-  </nav>
+
   <main id="stage">
-    <canvas id="screen" tabindex="0" aria-label="Device screen"></canvas>
-    <div id="stats" hidden></div>
-    <div id="drop-hint" hidden><span>Drop an APK to install it, or any file to copy it to Downloads</span></div>
-    <div id="overlay">
-      <p id="message"></p>
-      <button id="show-here" class="text-button" hidden>Show here</button>
+    <div class="glow" aria-hidden="true"></div>
+    <div class="device-layout" id="layout">
+      <div class="device" id="device-frame">
+        <canvas id="screen" tabindex="0" aria-label="Device screen"></canvas>
+        <div class="skeleton" aria-hidden="true">
+          <span class="spinner"></span>
+          <span id="skeleton-text" class="skeleton-text"></span>
+        </div>
+        <div id="stats" class="stats" hidden></div>
+      </div>
+      <nav class="rail" aria-label="Hardware buttons">
+        ${deviceButton('volumeUp', 'Volume up', 'volumeUp', 'left')}
+        ${deviceButton('volumeDown', 'Volume down', 'volumeDown', 'left')}
+        <span class="rail-sep"></span>
+        ${deviceButton('power', 'Power · hold for menu', 'power', 'left')}
+        ${deviceButton('rotate', 'Rotate', 'rotate', 'left')}
+        ${deviceButton('notifications', 'Notifications', 'notifications', 'left')}
+      </nav>
+      <nav class="dock" aria-label="Navigation">
+        ${deviceButton('back', 'Back · Esc', 'back', 'top')}
+        ${deviceButton('home', 'Home', 'home', 'top')}
+        ${deviceButton('recents', 'Overview', 'recents', 'top')}
+      </nav>
+    </div>
+
+    <section id="card" class="card" hidden>
+      ${HERO}
+      <h2 id="card-title"></h2>
+      <p id="card-text"></p>
+      <div class="card-actions">
+        <button id="card-primary" class="cta primary"></button>
+        <button id="card-secondary" class="cta ghost"></button>
+      </div>
+    </section>
+
+    <div id="drop-hint" class="drop-hint" hidden>
+      <span>Drop an APK to install it<br><small>or any file to copy it to Downloads</small></span>
     </div>
   </main>
   <script nonce="${opts.nonce}" src="${opts.scriptUri}"></script>
 </body>
 </html>`;
 }
+

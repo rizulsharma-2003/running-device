@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror, control, record and debug your Android device right inside VS Code.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -192,6 +192,12 @@
         "title": "More Actions…",
         "category": "Running Devices",
         "icon": "$(ellipsis)"
+      },
+      {
+        "command": "runningDevices.showLog",
+        "title": "Show Connection Log",
+        "category": "Running Devices",
+        "icon": "$(output)"
       }
     ],
     "menus": {

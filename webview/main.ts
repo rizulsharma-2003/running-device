@@ -1,4 +1,5 @@
 import type { DeviceButton, DeviceInfo, HostMessage, ToolbarAction, WebviewMessage } from '../shared/messages';
+import { icon, type IconName } from '../src/html';
 import { VideoRenderer } from './decoder';
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
@@ -6,14 +7,23 @@ const vscode = acquireVsCodeApi();
 const send = (msg: WebviewMessage) => vscode.postMessage(msg);
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const body = document.body;
 const select = $<HTMLSelectElement>('device');
+const deviceName = $<HTMLSpanElement>('device-name');
+const deviceMeta = $<HTMLSpanElement>('device-meta');
 const toggle = $<HTMLButtonElement>('toggle');
 const canvas = $<HTMLCanvasElement>('screen');
-const overlay = $<HTMLDivElement>('overlay');
-const message = $<HTMLParagraphElement>('message');
-const showHere = $<HTMLButtonElement>('show-here');
-const buttons = $<HTMLElement>('buttons');
 const stage = $<HTMLElement>('stage');
+const frame = $<HTMLDivElement>('device-frame');
+const rail = document.querySelector<HTMLElement>('.rail')!;
+const layoutEl = $<HTMLDivElement>('layout');
+const dock = document.querySelector<HTMLElement>('.dock')!;
+const skeletonText = $<HTMLSpanElement>('skeleton-text');
+const card = $<HTMLElement>('card');
+const cardTitle = $<HTMLHeadingElement>('card-title');
+const cardText = $<HTMLParagraphElement>('card-text');
+const cardPrimary = $<HTMLButtonElement>('card-primary');
+const cardSecondary = $<HTMLButtonElement>('card-secondary');
 const recordButton = $<HTMLButtonElement>('record');
 const recordTime = $<HTMLSpanElement>('record-time');
 const stats = $<HTMLDivElement>('stats');
@@ -70,6 +80,7 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
     case 'session':
       video = { width: msg.width, height: msg.height };
       renderer.resize(msg.width, msg.height);
+      layout();
       break;
     case 'recording':
       setRecording(msg.since);
@@ -98,41 +109,102 @@ function resetVideo() {
 
 // ---- rendering ----
 
+const readyDevices = () => state.devices.filter((d) => d.state === 'device');
+const currentDevice = () => state.devices.find((d) => d.id === (state.activeId ?? select.value));
+
+/** Card shown instead of the phone: what it says and what its buttons do. */
+interface CardSpec {
+  title: string;
+  text: string;
+  error?: boolean;
+  primary?: { label: string; icon?: IconName; run: () => void };
+  secondary?: { label: string; icon?: IconName; run: () => void };
+}
+
+let cardSpec: CardSpec | null = null;
+
+function cardFor(): CardSpec | null {
+  if (!state.surfaceActive) {
+    return {
+      title: 'Showing in another window',
+      text: state.activeId
+        ? `${state.deviceName || currentDevice()?.name || 'The device'} is mirrored in another tab or window.`
+        : 'Running Devices is open in another tab or window.',
+      primary: { label: 'Show here', run: () => send({ type: 'showHere' }) },
+    };
+  }
+  if (state.status === 'error') {
+    return {
+      title: "Couldn't connect",
+      text: state.statusMessage || 'Something went wrong while mirroring.',
+      error: true,
+      primary: { label: 'Try again', icon: 'refresh', run: startSelected },
+      secondary: { label: 'Show log', icon: 'log', run: () => action('showLog') },
+    };
+  }
+  if (state.status !== 'idle') {
+    return null;
+  }
+  const ready = readyDevices();
+  if (ready.length) {
+    const name = currentDevice()?.name ?? ready[0].name;
+    return {
+      title: 'Ready to mirror',
+      text: `${name} is connected.`,
+      primary: { label: 'Start mirroring', icon: 'play', run: startSelected },
+    };
+  }
+  if (state.devices.length) {
+    return {
+      title: 'Allow USB debugging',
+      text: 'Unlock the phone and accept the "Allow USB debugging?" prompt.',
+      primary: { label: 'Refresh', icon: 'refresh', run: () => send({ type: 'refresh' }) },
+    };
+  }
+  return {
+    title: 'Connect a device',
+    text: 'Plug in an Android phone with USB debugging on, or pair one over Wi-Fi.',
+    primary: { label: 'Pair over Wi-Fi', icon: 'wifi', run: () => action('pairWifi') },
+    secondary: { label: 'Refresh', icon: 'refresh', run: () => send({ type: 'refresh' }) },
+  };
+}
+
+function setCta(button: HTMLButtonElement, spec: CardSpec['primary']) {
+  button.hidden = !spec;
+  if (spec) {
+    button.innerHTML = (spec.icon ? icon(spec.icon) : '') + `<span></span>`;
+    button.querySelector('span')!.textContent = spec.label;
+  }
+}
+
 function render() {
-  const live = state.surfaceActive && state.status === 'streaming';
-  document.body.dataset.state = state.status;
-  document.body.classList.toggle('live', live && state.hasFrame);
-  document.body.classList.toggle('elsewhere', !state.surfaceActive);
+  const live = state.surfaceActive && state.status === 'streaming' && state.hasFrame;
+  body.dataset.state = state.status;
+  body.classList.toggle('live', live);
   for (const b of document.querySelectorAll<HTMLButtonElement>('.needs-stream')) {
-    b.disabled = !(live && state.hasFrame);
+    b.disabled = !live;
   }
 
-  let text = '';
-  let isError = false;
-  if (!state.surfaceActive && state.activeId) {
-    text = 'Showing in another tab or window.';
-  } else if (!state.surfaceActive) {
-    text = 'Running Devices is open in another tab or window.';
-  } else if (state.status === 'error') {
-    text = state.statusMessage;
-    isError = true;
-  } else if (state.status === 'connecting') {
-    text = state.statusMessage || 'Connecting…';
-  } else if (state.status === 'streaming' && !state.hasFrame) {
-    text = `Waiting for video from ${state.deviceName || 'device'}…`;
-  } else if (state.status === 'idle') {
-    text = state.devices.length
-      ? 'Select a device and press Start.'
-      : 'No devices found. Connect a device with USB debugging enabled, or start an emulator.';
+  cardSpec = cardFor();
+  body.dataset.view = cardSpec ? 'card' : 'device';
+  card.hidden = !cardSpec;
+  if (cardSpec) {
+    card.classList.toggle('error', !!cardSpec.error);
+    cardTitle.textContent = cardSpec.title;
+    cardText.textContent = cardSpec.text;
+    setCta(cardPrimary, cardSpec.primary);
+    setCta(cardSecondary, cardSpec.secondary);
+  } else {
+    skeletonText.textContent =
+      state.status === 'connecting'
+        ? state.statusMessage || 'Connecting…'
+        : `Waiting for ${state.deviceName || 'the device'}…`;
+    layout();
   }
-  message.textContent = text;
-  message.classList.toggle('error', isError);
-  overlay.hidden = !text;
-  showHere.hidden = state.surfaceActive;
 }
 
 function renderDevices() {
-  const ids = state.devices.map((d) => `${d.id}:${d.state}`).join('|');
+  const ids = state.devices.map((d) => `${d.id}:${d.state}:${d.detail ?? ''}`).join('|');
   if (select.dataset.ids !== ids) {
     select.dataset.ids = ids;
     select.replaceChildren(
@@ -143,49 +215,109 @@ function renderDevices() {
         return option;
       }),
     );
-    if (!state.devices.length) {
-      const option = document.createElement('option');
-      option.textContent = 'No devices';
-      option.disabled = true;
-      select.append(option);
-    }
   }
   if (state.activeId) {
     select.value = state.activeId;
   }
+  const device = currentDevice();
+  deviceName.textContent = device ? device.name : 'No device';
+  deviceMeta.textContent = device
+    ? device.state === 'device'
+      ? device.detail ?? ''
+      : device.state === 'unauthorized'
+        ? 'Waiting for permission'
+        : device.state
+    : 'Connect with USB or Wi-Fi';
+  body.classList.toggle('has-device', readyDevices().length > 0);
+
   const running = !!state.activeId;
   select.disabled = !state.devices.length;
-  toggle.disabled = !state.devices.length && !running;
+  toggle.disabled = !readyDevices().length && !running;
   toggle.classList.toggle('running', running);
   const label = running ? 'Stop mirroring' : 'Start mirroring';
-  toggle.title = label;
+  toggle.dataset.tip = label;
   toggle.setAttribute('aria-label', label);
 }
 
+function startSelected() {
+  const id = select.value || readyDevices()[0]?.id;
+  if (id) {
+    send({ type: 'select', deviceId: id });
+  }
+}
+
+const action = (a: ToolbarAction) => send({ type: 'action', action: a });
+
 select.addEventListener('change', () => {
+  renderDevices();
   if (state.activeId && select.value !== state.activeId) {
     send({ type: 'select', deviceId: select.value });
+  } else {
+    render();
   }
 });
 
 toggle.addEventListener('click', () => {
   if (state.activeId) {
     send({ type: 'stop' });
-  } else if (select.value) {
-    send({ type: 'select', deviceId: select.value });
+  } else {
+    startSelected();
   }
 });
 
-showHere.addEventListener('click', () => send({ type: 'showHere' }));
+cardPrimary.addEventListener('click', () => cardSpec?.primary?.run());
+cardSecondary.addEventListener('click', () => cardSpec?.secondary?.run());
 
-// ---- header actions: screenshot, record, more (handled by the extension) ----
-
-document.querySelector('header')!.addEventListener('click', (e) => {
+document.querySelector('.topbar')!.addEventListener('click', (e) => {
   const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
   if (target) {
-    send({ type: 'action', action: target.dataset.action as ToolbarAction });
+    action(target.dataset.action as ToolbarAction);
   }
 });
+
+// ---- device frame sizing ----
+
+/**
+ * Fits the phone (screen + bezel) into the space left by the dock and rail,
+ * keeping the video's aspect ratio. Bezel and corner radius scale with size.
+ */
+const RAIL_GAP = 12;
+
+function layout() {
+  body.classList.toggle('narrow', body.clientWidth < 340);
+  if (body.dataset.view !== 'device') return;
+  const narrow = body.classList.contains('narrow');
+  const cs = getComputedStyle(stage);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const railSpace = narrow ? 0 : rail.offsetWidth + RAIL_GAP;
+  const availW = stage.clientWidth - padX - railSpace;
+  const availH = stage.clientHeight - padY - dock.offsetHeight - 14 - (narrow ? rail.offsetHeight + 10 : 0);
+  const aspect = video.width && video.height ? video.width / video.height : 9 / 19.5;
+
+  let bezel = 9;
+  let screenW = 0;
+  let screenH = 0;
+  for (let i = 0; i < 2; i++) {
+    screenH = Math.max(60, Math.min(availH - 2 * bezel, (availW - 2 * bezel) / aspect));
+    screenW = screenH * aspect;
+    bezel = Math.round(Math.min(11, Math.max(5, Math.min(screenW, screenH) * 0.035)));
+  }
+  const screenRadius = Math.round(Math.min(screenW, screenH) * 0.085);
+  // Center the phone itself (not phone + rail) when there's room for a balancing column.
+  const outerW = screenW + 2 * bezel;
+  body.classList.toggle('centered', !narrow && availW - outerW >= railSpace);
+  layoutEl.style.setProperty('--rail-w', `${rail.offsetWidth}px`);
+  frame.style.width = `${Math.round(screenW + 2 * bezel)}px`;
+  frame.style.height = `${Math.round(screenH + 2 * bezel)}px`;
+  frame.style.setProperty('--bezel', `${bezel}px`);
+  frame.style.setProperty('--screen-radius', `${screenRadius}px`);
+  frame.style.setProperty('--frame-radius', `${screenRadius + bezel}px`);
+}
+
+new ResizeObserver(() => layout()).observe(body);
+
+// ---- recording indicator ----
 
 let recordTimer: number | undefined;
 
@@ -193,7 +325,7 @@ function setRecording(since: number | null) {
   clearInterval(recordTimer);
   recordButton.classList.toggle('recording', since !== null);
   const label = since === null ? 'Record screen' : 'Stop recording';
-  recordButton.title = label;
+  recordButton.dataset.tip = label;
   recordButton.setAttribute('aria-label', label);
   recordTime.textContent = '';
   if (since !== null) {
@@ -272,28 +404,30 @@ stage.addEventListener('drop', async (e) => {
   }
 });
 
-// ---- toolbar buttons: press on pointerdown, release on pointerup so long-press works ----
+// ---- device buttons: press on pointerdown, release on pointerup so long-press works ----
 
-buttons.addEventListener('pointerdown', (e) => {
-  const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-button]');
-  if (!target || !state.activeId || !state.surfaceActive) {
-    return;
-  }
-  const button = target.dataset.button as DeviceButton;
-  target.setPointerCapture(e.pointerId);
-  if (button === 'rotate' || button === 'notifications') {
-    send({ type: 'button', button, action: 'press' });
-    return;
-  }
-  send({ type: 'button', button, action: 'down' });
-  const up = () => {
-    send({ type: 'button', button, action: 'up' });
-    target.removeEventListener('pointerup', up);
-    target.removeEventListener('pointercancel', up);
-  };
-  target.addEventListener('pointerup', up);
-  target.addEventListener('pointercancel', up);
-});
+for (const container of [dock, rail]) {
+  container.addEventListener('pointerdown', (e) => {
+    const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-button]');
+    if (!target || !state.activeId || !state.surfaceActive) {
+      return;
+    }
+    const button = target.dataset.button as DeviceButton;
+    target.setPointerCapture(e.pointerId);
+    if (button === 'rotate' || button === 'notifications') {
+      send({ type: 'button', button, action: 'press' });
+      return;
+    }
+    send({ type: 'button', button, action: 'down' });
+    const up = () => {
+      send({ type: 'button', button, action: 'up' });
+      target.removeEventListener('pointerup', up);
+      target.removeEventListener('pointercancel', up);
+    };
+    target.addEventListener('pointerup', up);
+    target.addEventListener('pointercancel', up);
+  });
+}
 
 // ---- touch / mouse on the screen ----
 

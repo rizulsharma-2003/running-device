@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0
+
+A complete visual redesign.
+
+- The screen sits in a realistic device frame that sizes itself to the panel, with a soft glow while live
+- Device chip with live status, Android version and connection type (USB, Wi-Fi, emulator)
+- Navigation dock under the device and a hardware-button rail beside it; both adapt to narrow panels
+- Capture actions grouped in one control, a recording pill with a live timer, and a single start/stop button
+- Clear states for every situation: connect a device (with Wi-Fi pairing), connecting, errors with Try again and Show log, and "showing in another window"
+- Quick tooltips, press feedback, and full support for light, dark and high-contrast themes
+
 ## 0.3.0
 
 - **Screenshots** at full device resolution, opened in VS Code, with Copy Image (macOS, Windows)
