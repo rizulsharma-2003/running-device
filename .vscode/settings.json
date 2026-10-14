@@ -1,0 +1,6 @@
+{
+  // The JS debugger's Network view sends Network.enable to every debug target.
+  // On VS Code 1.138 that crashes the Extension Development Host (exit code 6)
+  // right after F5, so keep it off for this workspace.
+  "debug.javascript.enableNetworkView": false
+}
