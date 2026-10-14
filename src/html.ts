@@ -11,6 +11,9 @@ const ICONS = {
   volumeUp: '<path d="M2.5 6.2h2L8 3.5v9l-3.5-2.7h-2z"/><path d="M10.5 8h3.5M12.25 6.25v3.5"/>',
   power: '<path d="M8 2.5V7.5"/><path d="M4.8 4.6a4.75 4.75 0 1 0 6.4 0"/>',
   rotate: '<path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9L13.5 5.7"/><path d="M13.5 2.5v3.2h-3.2"/>',
+  screenshot: '<path d="M2.5 5.75a1.25 1.25 0 0 1 1.25-1.25h1.5l1-1.5h3.5l1 1.5h1.5a1.25 1.25 0 0 1 1.25 1.25v5.5a1.25 1.25 0 0 1-1.25 1.25h-8.5a1.25 1.25 0 0 1-1.25-1.25z"/><circle cx="8" cy="8.25" r="2.25"/>',
+  record: '<circle cx="8" cy="8" r="5.25"/><circle cx="8" cy="8" r="2.5" fill="currentColor" stroke="none"/>',
+  more: '<circle cx="3.5" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="1" fill="currentColor" stroke="none"/>',
   notifications: '<path d="M4.25 11V7.25a3.75 3.75 0 0 1 7.5 0V11l1 1.25h-9.5z"/><path d="M6.75 14h2.5"/>',
 } as const;
 
@@ -36,6 +39,10 @@ export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: 
     <button id="toggle" class="icon-button toggle" title="Start mirroring" aria-label="Start mirroring">
       <span class="when-stopped">${icon('play')}</span><span class="when-running">${icon('stop')}</span>
     </button>
+    <span class="divider"></span>
+    <button class="icon-button needs-stream" data-action="screenshot" title="Take screenshot" aria-label="Take screenshot">${icon('screenshot')}</button>
+    <button class="icon-button needs-stream record" id="record" data-action="record" title="Record screen" aria-label="Record screen">${icon('record')}<span id="record-time"></span></button>
+    <button class="icon-button" data-action="menu" title="More actions: apps, logcat, Wi-Fi, quick settings…" aria-label="More actions">${icon('more')}</button>
   </header>
   <nav class="toolbar controls" id="buttons" aria-label="Device controls">
     <div class="group">
@@ -55,6 +62,8 @@ export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: 
   </nav>
   <main id="stage">
     <canvas id="screen" tabindex="0" aria-label="Device screen"></canvas>
+    <div id="stats" hidden></div>
+    <div id="drop-hint" hidden><span>Drop an APK to install it, or any file to copy it to Downloads</span></div>
     <div id="overlay">
       <p id="message"></p>
       <button id="show-here" class="text-button" hidden>Show here</button>

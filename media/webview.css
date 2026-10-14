@@ -198,3 +198,77 @@ body.elsewhere #screen {
 #message.error {
   color: var(--vscode-errorForeground);
 }
+
+/* ---- capture actions ---- */
+
+.divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)));
+}
+
+.record.recording {
+  width: auto;
+  gap: 5px;
+  padding: 0 7px 0 5px;
+  color: var(--vscode-debugIcon-stopForeground, #f48771);
+  background: color-mix(in srgb, var(--vscode-debugIcon-stopForeground, #f48771) 15%, transparent);
+}
+
+.record.recording .icon {
+  animation: rec-pulse 1.4s ease-in-out infinite;
+}
+
+#record-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+@keyframes rec-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---- performance stats ---- */
+
+#stats {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 10px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#stats[hidden] {
+  display: none;
+}
+
+/* ---- drop target ---- */
+
+#drop-hint {
+  position: absolute;
+  inset: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  border: 2px dashed var(--vscode-focusBorder);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
+  pointer-events: none;
+}
+
+#drop-hint[hidden] {
+  display: none;
+}

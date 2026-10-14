@@ -76,6 +76,8 @@ export class VideoRenderer {
   }
 
   private drawn = false;
+  /** Called for every decoded frame (used by the stats overlay). */
+  onFrame: () => void = () => undefined;
 
   private draw(frame: VideoFrame) {
     if (this.canvas.width !== frame.displayWidth || this.canvas.height !== frame.displayHeight) {
@@ -84,6 +86,7 @@ export class VideoRenderer {
     }
     this.ctx.drawImage(frame, 0, 0);
     frame.close();
+    this.onFrame();
     if (!this.drawn) {
       this.drawn = true;
       this.onFirstFrame();

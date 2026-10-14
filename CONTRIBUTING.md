@@ -49,6 +49,11 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | [src/mirrorController.ts](src/mirrorController.ts) | Device polling, session lifecycle, routes the stream to the active surface |
 | [src/surfaces.ts](src/surfaces.ts) | Side bar view and editor tab / floating window that display the device |
 | [src/html.ts](src/html.ts) | Webview markup and the toolbar icon set |
+| [src/actions.ts](src/actions.ts) | Commands and menus: capture, apps, files, quick settings, Wi-Fi |
+| [src/android/deviceTools.ts](src/android/deviceTools.ts) | The adb calls behind those actions (no VS Code dependency) |
+| [src/recorder.ts](src/recorder.ts) | Annex B → MP4 muxing of the mirror stream |
+| [src/logcat.ts](src/logcat.ts) | Logcat pseudo-terminal with per-app pid tracking |
+| [src/wifi.ts](src/wifi.ts) | QR / code pairing over mDNS, switch to Wi-Fi |
 | [src/backend.ts](src/backend.ts) | Platform-neutral `DeviceBackend` / `MirrorSession` interfaces |
 | [src/android/adb.ts](src/android/adb.ts) | adb discovery and commands |
 | [src/android/scrcpy/](src/android/scrcpy/) | scrcpy v5.0.1 wire protocol, socket handling, demuxing |

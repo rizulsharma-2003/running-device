@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror and control your Android device inside VS Code, like Android Studio's Running Devices window.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -17,15 +17,20 @@
     "Other"
   ],
   "keywords": [
-    "android",
     "adb",
-    "screen mirroring",
-    "mirror",
-    "emulator",
+    "android",
+    "apk",
     "device",
-    "scrcpy",
+    "emulator",
+    "logcat",
+    "mirror",
+    "remote control",
     "running devices",
-    "remote control"
+    "scrcpy",
+    "screen mirroring",
+    "screen recording",
+    "screenshot",
+    "wireless debugging"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -91,6 +96,102 @@
         "title": "Move Back to Side Bar",
         "category": "Running Devices",
         "icon": "$(layout-sidebar-left)"
+      },
+      {
+        "command": "runningDevices.screenshot",
+        "title": "Take Screenshot",
+        "category": "Running Devices",
+        "icon": "$(device-camera)"
+      },
+      {
+        "command": "runningDevices.toggleRecording",
+        "title": "Start/Stop Screen Recording",
+        "category": "Running Devices",
+        "icon": "$(record)"
+      },
+      {
+        "command": "runningDevices.installApk",
+        "title": "Install APK on Android Device",
+        "category": "Running Devices",
+        "icon": "$(desktop-download)"
+      },
+      {
+        "command": "runningDevices.pushFile",
+        "title": "Copy to Android Device",
+        "category": "Running Devices",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "runningDevices.logcat",
+        "title": "Logcat: Current App",
+        "category": "Running Devices",
+        "icon": "$(output)"
+      },
+      {
+        "command": "runningDevices.logcatAll",
+        "title": "Logcat: All Apps",
+        "category": "Running Devices",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "runningDevices.launchApp",
+        "title": "Launch App…",
+        "category": "Running Devices",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "runningDevices.openDeepLink",
+        "title": "Open Deep Link…",
+        "category": "Running Devices",
+        "icon": "$(link)"
+      },
+      {
+        "command": "runningDevices.appActions",
+        "title": "Current App Actions…",
+        "category": "Running Devices",
+        "icon": "$(package)"
+      },
+      {
+        "command": "runningDevices.quickSettings",
+        "title": "Quick Settings…",
+        "category": "Running Devices",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "runningDevices.toggleStats",
+        "title": "Toggle Performance Stats",
+        "category": "Running Devices",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "runningDevices.pairWifiQr",
+        "title": "Pair Device over Wi-Fi with QR Code…",
+        "category": "Running Devices",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "runningDevices.pairWifiCode",
+        "title": "Pair Device over Wi-Fi with Pairing Code…",
+        "category": "Running Devices",
+        "icon": "$(broadcast)"
+      },
+      {
+        "command": "runningDevices.switchToWifi",
+        "title": "Switch USB Device to Wi-Fi",
+        "category": "Running Devices",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "runningDevices.connectWifi",
+        "title": "Connect to Device over Wi-Fi…",
+        "category": "Running Devices",
+        "icon": "$(link)"
+      },
+      {
+        "command": "runningDevices.more",
+        "title": "More Actions…",
+        "category": "Running Devices",
+        "icon": "$(ellipsis)"
       }
     ],
     "menus": {
@@ -141,6 +242,22 @@
         {
           "command": "runningDevices.stop",
           "when": "runningDevices.mirroring"
+        },
+        {
+          "command": "runningDevices.more",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "runningDevices.installApk",
+          "when": "resourceExtname == .apk",
+          "group": "navigation@90"
+        },
+        {
+          "command": "runningDevices.pushFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "navigation@91"
         }
       ]
     },
@@ -182,6 +299,35 @@
           "type": "boolean",
           "default": true,
           "description": "Turn the device screen on when the mouse moves over the mirrored screen, and keep it awake while you hover."
+        },
+        "runningDevices.captureFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Where screenshots and recordings are saved. Supports `~` and `${workspaceFolder}`. Empty means your Desktop."
+        },
+        "runningDevices.openCaptures": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open screenshots and recordings in VS Code after they're saved."
+        },
+        "runningDevices.logcatLevel": {
+          "type": "string",
+          "default": "V",
+          "enum": [
+            "V",
+            "D",
+            "I",
+            "W",
+            "E"
+          ],
+          "enumDescriptions": [
+            "Verbose",
+            "Debug",
+            "Info",
+            "Warning",
+            "Error"
+          ],
+          "description": "Minimum log level shown in Logcat."
         }
       }
     }
@@ -196,9 +342,14 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "@types/qrcode": "^1.5.6",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "mp4-muxer": "^5.2.2",
+    "qrcode": "^1.5.4"
   }
 }

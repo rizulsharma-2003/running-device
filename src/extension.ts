@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { Adb, resolveAdbPath } from './android/adb';
 import { AndroidBackend } from './android/androidBackend';
+import { DeviceTools } from './android/deviceTools';
+import { DeviceActions } from './actions';
 import { MirrorController } from './mirrorController';
 import { DevicePanel, DevicesViewProvider } from './surfaces';
 
@@ -14,10 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
   const backends = [new AndroidBackend(adb, serverJar, (line) => output.appendLine(line))];
   const controller = new MirrorController(backends, output);
   const panel = new DevicePanel(context.extensionUri, controller);
+  const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri);
 
   const focusView = () => vscode.commands.executeCommand(`${DevicesViewProvider.viewId}.focus`);
 
   context.subscriptions.push(
+    ...actions.register(),
     output,
     controller,
     vscode.window.registerWebviewViewProvider(

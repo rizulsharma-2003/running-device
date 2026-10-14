@@ -1,4 +1,4 @@
-import type { DeviceButton, DeviceInfo, HostMessage, WebviewMessage } from '../shared/messages';
+import type { DeviceButton, DeviceInfo, HostMessage, ToolbarAction, WebviewMessage } from '../shared/messages';
 import { VideoRenderer } from './decoder';
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
@@ -13,6 +13,11 @@ const overlay = $<HTMLDivElement>('overlay');
 const message = $<HTMLParagraphElement>('message');
 const showHere = $<HTMLButtonElement>('show-here');
 const buttons = $<HTMLElement>('buttons');
+const stage = $<HTMLElement>('stage');
+const recordButton = $<HTMLButtonElement>('record');
+const recordTime = $<HTMLSpanElement>('record-time');
+const stats = $<HTMLDivElement>('stats');
+const dropHint = $<HTMLDivElement>('drop-hint');
 
 const state = {
   devices: [] as DeviceInfo[],
@@ -66,7 +71,14 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       video = { width: msg.width, height: msg.height };
       renderer.resize(msg.width, msg.height);
       break;
+    case 'recording':
+      setRecording(msg.since);
+      return;
+    case 'toggleStats':
+      toggleStats();
+      return;
     case 'packet':
+      bytesThisSecond += msg.data?.byteLength ?? 0;
       if (!(msg.data instanceof Uint8Array)) {
         state.status = 'error';
         state.statusMessage = 'Received a video packet in an unexpected format.';
@@ -91,6 +103,9 @@ function render() {
   document.body.dataset.state = state.status;
   document.body.classList.toggle('live', live && state.hasFrame);
   document.body.classList.toggle('elsewhere', !state.surfaceActive);
+  for (const b of document.querySelectorAll<HTMLButtonElement>('.needs-stream')) {
+    b.disabled = !(live && state.hasFrame);
+  }
 
   let text = '';
   let isError = false;
@@ -162,6 +177,100 @@ toggle.addEventListener('click', () => {
 });
 
 showHere.addEventListener('click', () => send({ type: 'showHere' }));
+
+// ---- header actions: screenshot, record, more (handled by the extension) ----
+
+document.querySelector('header')!.addEventListener('click', (e) => {
+  const target = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-action]');
+  if (target) {
+    send({ type: 'action', action: target.dataset.action as ToolbarAction });
+  }
+});
+
+let recordTimer: number | undefined;
+
+function setRecording(since: number | null) {
+  clearInterval(recordTimer);
+  recordButton.classList.toggle('recording', since !== null);
+  const label = since === null ? 'Record screen' : 'Stop recording';
+  recordButton.title = label;
+  recordButton.setAttribute('aria-label', label);
+  recordTime.textContent = '';
+  if (since !== null) {
+    const tick = () => {
+      const s = Math.max(0, Math.floor((Date.now() - since) / 1000));
+      recordTime.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    };
+    tick();
+    recordTimer = window.setInterval(tick, 500);
+  }
+}
+
+// ---- performance stats overlay ----
+
+let framesThisSecond = 0;
+let bytesThisSecond = 0;
+let statsTimer: number | undefined;
+renderer.onFrame = () => framesThisSecond++;
+
+function toggleStats() {
+  stats.hidden = !stats.hidden;
+  clearInterval(statsTimer);
+  framesThisSecond = 0;
+  bytesThisSecond = 0;
+  if (!stats.hidden) {
+    stats.textContent = 'measuring…';
+    statsTimer = window.setInterval(() => {
+      const mbps = (bytesThisSecond * 8) / 1e6;
+      stats.textContent = `${framesThisSecond} fps · ${mbps.toFixed(1)} Mbps · ${video.width}×${video.height}`;
+      framesThisSecond = 0;
+      bytesThisSecond = 0;
+    }, 1000);
+  }
+}
+
+// ---- drag & drop: APKs are installed, other files are copied to the device ----
+
+let dragDepth = 0;
+const hasFiles = (e: DragEvent) =>
+  !!e.dataTransfer && [...e.dataTransfer.types].some((t) => t === 'Files' || t === 'text/uri-list' || t === 'application/vnd.code.uri-list');
+
+stage.addEventListener('dragenter', (e) => {
+  if (!hasFiles(e) || !state.activeId) return;
+  e.preventDefault();
+  dragDepth++;
+  dropHint.hidden = false;
+});
+stage.addEventListener('dragover', (e) => {
+  if (!hasFiles(e) || !state.activeId) return;
+  e.preventDefault();
+  e.dataTransfer!.dropEffect = 'copy';
+});
+stage.addEventListener('dragleave', () => {
+  if (--dragDepth <= 0) {
+    dragDepth = 0;
+    dropHint.hidden = true;
+  }
+});
+stage.addEventListener('drop', async (e) => {
+  dragDepth = 0;
+  dropHint.hidden = true;
+  if (!e.dataTransfer || !state.activeId) return;
+  e.preventDefault();
+  // From VS Code's Explorer: URIs. From the OS: file contents.
+  const uriList = e.dataTransfer.getData('application/vnd.code.uri-list') || e.dataTransfer.getData('text/uri-list');
+  const uris = uriList
+    .split(/\r?\n/)
+    .map((u) => u.trim())
+    .filter((u) => u && !u.startsWith('#'));
+  if (uris.length) {
+    send({ type: 'dropUris', uris });
+    return;
+  }
+  for (const file of [...e.dataTransfer.files]) {
+    send({ type: 'dropFile', name: file.name, data: new Uint8Array(await file.arrayBuffer()) });
+  }
+});
 
 // ---- toolbar buttons: press on pointerdown, release on pointerup so long-press works ----
 

@@ -24,3 +24,7 @@ SOFTWARE.
 
 This extension bundles scrcpy-server (resources/scrcpy-server), which is
 licensed under the Apache License 2.0. See resources/scrcpy-LICENSE.
+
+Bundled into dist/extension.js under the MIT License:
+- mp4-muxer, Copyright (c) 2023 Vanilagy
+- qrcode (node-qrcode), Copyright (c) 2012 Ryan Day

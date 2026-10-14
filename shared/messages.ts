@@ -36,7 +36,13 @@ export type HostMessage =
   | { type: 'session'; width: number; height: number }
   | { type: 'packet'; data: Uint8Array; key: boolean; config: boolean; pts: number }
   /** Only one surface (side bar view, editor tab, floating window) shows the stream at a time. */
-  | { type: 'surface'; active: boolean };
+  | { type: 'surface'; active: boolean }
+  /** Recording state; `since` is the start time (ms epoch) or null when not recording. */
+  | { type: 'recording'; since: number | null }
+  | { type: 'toggleStats' };
+
+/** Toolbar actions handled by the extension host. */
+export type ToolbarAction = 'screenshot' | 'record' | 'menu';
 
 // ---- webview -> host ----
 
@@ -49,6 +55,10 @@ export type WebviewMessage =
   | { type: 'showHere' }
   /** Pointer is over the screen: wake the device if it's asleep. */
   | { type: 'wake' }
+  | { type: 'action'; action: ToolbarAction }
+  /** Files dropped on the screen: workspace/Explorer URIs, or file contents from the OS. */
+  | { type: 'dropUris'; uris: string[] }
+  | { type: 'dropFile'; name: string; data: Uint8Array }
   | {
       type: 'pointer';
       action: PointerAction;

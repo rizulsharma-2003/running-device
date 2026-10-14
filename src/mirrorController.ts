@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { DeviceInfo, HostMessage, VideoCodec, WebviewMessage } from '../shared/messages';
 import type { DeviceBackend, MirrorOptions, MirrorSession } from './backend';
+import { Mp4Recorder } from './recorder';
 
 const POLL_INTERVAL_MS = 2000;
 const WAKE_MIN_INTERVAL_MS = 3000;
@@ -12,6 +13,17 @@ export interface Surface {
 }
 
 type Status = Extract<HostMessage, { type: 'status' }>;
+
+/** Webview messages the controller doesn't handle itself (toolbar actions, file drops). */
+export type ActionMessage = Extract<WebviewMessage, { type: 'action' | 'dropUris' | 'dropFile' }>;
+
+export interface RecordingResult {
+  path: string;
+  saved: boolean;
+  duration: number;
+  /** Why recording stopped, if it wasn't the user. */
+  reason?: string;
+}
 
 /**
  * Owns device discovery and the single mirroring session, independent of
@@ -37,6 +49,13 @@ export class MirrorController implements vscode.Disposable {
   private autoStarted = new Set<string>();
   private lastListError = '';
   private lastWake = 0;
+  private recorder: Mp4Recorder | null = null;
+  private recordingSince: number | null = null;
+
+  /** Set by the extension: handles toolbar actions and drops. */
+  onAction: (msg: ActionMessage) => void = () => undefined;
+  /** Called when a recording stops without the user asking (rotation, disconnect). */
+  onRecordingStopped: (result: RecordingResult) => void = () => undefined;
 
   constructor(
     private readonly backends: DeviceBackend[],
@@ -97,6 +116,7 @@ export class MirrorController implements vscode.Disposable {
     surface.post({ type: 'surface', active });
     surface.post({ type: 'devices', devices: this.devices, activeId: this.activeId });
     surface.post(this.status);
+    surface.post({ type: 'recording', since: this.recordingSince });
     if (active && this.session) {
       if (this.stream) surface.post(this.stream);
       if (this.videoSize) surface.post(this.videoSize);
@@ -138,6 +158,11 @@ export class MirrorController implements vscode.Disposable {
         break;
       case 'refresh':
         void this.refresh();
+        break;
+      case 'action':
+      case 'dropUris':
+      case 'dropFile':
+        this.onAction(msg);
         break;
       case 'wake': {
         const now = Date.now();
@@ -229,6 +254,9 @@ export class MirrorController implements vscode.Disposable {
           this.videoSize = { type: 'session', width, height };
           this.config = null;
           this.postVideo(this.videoSize);
+          if (this.recorder && !this.recorder.onSession(width, height)) {
+            this.onRecordingStopped(this.stopRecording('The device rotated, so the recording was saved.')!);
+          }
         },
         onPacket: (data, key, config, pts) => {
           if (generation !== this.generation) return;
@@ -238,11 +266,15 @@ export class MirrorController implements vscode.Disposable {
           if (config) {
             this.config = msg;
           }
+          this.recorder?.push(data, key, config, pts);
           this.postVideo(msg);
         },
         onClose: (error) => {
           if (generation !== this.generation) return;
           this.session = null;
+          if (this.recorder) {
+            this.onRecordingStopped(this.stopRecording('The device disconnected, so the recording was saved.')!);
+          }
           this.clearStream();
           this.setActiveDevice(null);
           if (error) {
@@ -268,6 +300,9 @@ export class MirrorController implements vscode.Disposable {
   }
 
   stop(): void {
+    if (this.recorder) {
+      this.onRecordingStopped(this.stopRecording('Mirroring stopped, so the recording was saved.')!);
+    }
     this.generation++;
     const session = this.session;
     this.session = null;
@@ -275,6 +310,46 @@ export class MirrorController implements vscode.Disposable {
     this.clearStream();
     this.setActiveDevice(null);
     this.setStatus('idle');
+  }
+
+  // ---- recording ----
+
+  get activeDeviceId() {
+    return this.activeId;
+  }
+
+  get isRecording() {
+    return !!this.recorder;
+  }
+
+  startRecording(path: string) {
+    if (!this.session) {
+      throw new Error('Start mirroring a device first.');
+    }
+    if (this.recorder) {
+      return;
+    }
+    this.recorder = new Mp4Recorder(path);
+    this.recordingSince = Date.now();
+    this.broadcast({ type: 'recording', since: this.recordingSince });
+    // Restart the capture so the recording begins with a fresh session and key frame.
+    this.session.sendInput({ type: 'requestKeyFrame' });
+  }
+
+  stopRecording(reason?: string): RecordingResult | null {
+    const recorder = this.recorder;
+    if (!recorder) {
+      return null;
+    }
+    this.recorder = null;
+    this.recordingSince = null;
+    this.broadcast({ type: 'recording', since: null });
+    const saved = recorder.finish();
+    return { path: recorder.path, saved, duration: recorder.duration, reason };
+  }
+
+  toggleStats() {
+    this.active?.post({ type: 'toggleStats' });
   }
 
   private clearStream() {

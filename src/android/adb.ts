@@ -53,6 +53,29 @@ export class Adb {
     });
   }
 
+  /** Like exec, but returns raw stdout (for binary output such as screenshots). */
+  execBuffer(args: string[], timeoutMs = 30_000): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      execFile(
+        this.path,
+        args,
+        { timeout: timeoutMs, maxBuffer: 256 * 1024 * 1024, encoding: 'buffer' },
+        (err, stdout, stderr) => {
+          if (err) {
+            reject(new Error(`adb ${args.join(' ')} failed: ${stderr.toString().trim() || err.message}`));
+          } else {
+            resolve(stdout);
+          }
+        },
+      );
+    });
+  }
+
+  /** Runs a shell command on the device. Quote untrusted parts with shellQuote(). */
+  shell(serial: string, command: string, timeoutMs?: number): Promise<string> {
+    return this.exec(['-s', serial, 'shell', command], timeoutMs);
+  }
+
   spawn(args: string[]): ChildProcess {
     return spawn(this.path, args, { stdio: ['ignore', 'pipe', 'pipe'] });
   }
@@ -79,6 +102,11 @@ export class Adb {
   async removeForward(serial: string, port: number): Promise<void> {
     await this.exec(['-s', serial, 'forward', '--remove', `tcp:${port}`]).catch(() => undefined);
   }
+}
+
+/** Quotes a value for the device's /system/bin/sh. */
+export function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 export function parseDevices(output: string): AdbDevice[] {
