@@ -100,6 +100,7 @@ export function renderHtml(opts: { cspSource: string; nonce: string; scriptUri: 
       </div>
     </nav>
     <div class="handle" id="handle" aria-hidden="true"><span></span></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <section id="card" class="card" hidden>
       ${HERO}

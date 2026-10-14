@@ -17,6 +17,7 @@ const stage = $<HTMLElement>('stage');
 const frame = $<HTMLDivElement>('device-frame');
 const controls = $<HTMLElement>('controls');
 const handle = $<HTMLDivElement>('handle');
+const toast = $<HTMLDivElement>('toast');
 const skeletonText = $<HTMLSpanElement>('skeleton-text');
 const card = $<HTMLElement>('card');
 const cardTitle = $<HTMLHeadingElement>('card-title');
@@ -87,6 +88,9 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
       return;
     case 'toggleStats':
       toggleStats();
+      return;
+    case 'toast':
+      showToast(msg.text);
       return;
     case 'packet':
       bytesThisSecond += msg.data?.byteLength ?? 0;
@@ -372,6 +376,17 @@ function layout() {
     b.dataset.tipSide = orient === 'v' ? 'left' : 'top';
   }
   body.classList.toggle('controls-overlay', mode === 'overlay');
+}
+
+// ---- toast ----
+
+let toastTimer: number | undefined;
+
+function showToast(text: string) {
+  clearTimeout(toastTimer);
+  toast.textContent = text;
+  toast.classList.add('visible');
+  toastTimer = window.setTimeout(() => toast.classList.remove('visible'), 3800);
 }
 
 // ---- auto-hide for the overlay control bar ----

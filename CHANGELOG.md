@@ -9,6 +9,7 @@ A complete visual redesign.
 - The screen always gets the most room: device controls sit beside or below it only when there's spare space, otherwise they tuck behind a handle at the bottom edge and slide up on hover
 - Capture actions grouped in one control, a recording pill with a live timer, and a single start/stop button
 - Clear states for every situation: connect a device (with Wi-Fi pairing), connecting, errors with Try again and Show log, and "showing in another window"
+- Rotate now sticks even with auto-rotate on, and tells you when the app in front is locked to portrait or landscape
 - Quick tooltips, press feedback, and full support for light, dark and high-contrast themes
 
 ## 0.3.0

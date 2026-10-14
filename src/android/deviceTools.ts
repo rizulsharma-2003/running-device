@@ -134,6 +134,52 @@ export class DeviceTools {
       .filter((n) => Number.isInteger(n) && n > 0);
   }
 
+  // ---- rotation ----
+
+  private sdkCache = new Map<string, number>();
+
+  async sdk(serial: string): Promise<number> {
+    let sdk = this.sdkCache.get(serial);
+    if (sdk === undefined) {
+      sdk = parseInt(await this.adb.shell(serial, 'getprop ro.build.version.sdk'), 10) || 0;
+      this.sdkCache.set(serial, sdk);
+    }
+    return sdk;
+  }
+
+  /** Current display rotation, 0–3 (quarter turns). */
+  async rotation(serial: string): Promise<number> {
+    const out = await this.adb.shell(serial, 'dumpsys window displays | grep -m1 mCurrentRotation');
+    const m = /ROTATION_(\d+)/.exec(out);
+    return m ? Number(m[1]) / 90 : 0;
+  }
+
+  /** Orientation the foreground activity insists on ("portrait", "landscape"), or null if it follows the device. */
+  async orientationLock(serial: string): Promise<string | null> {
+    const out = await this.adb.shell(serial, 'dumpsys activity activities | grep -A60 topResumedActivity | grep -m1 mOrientation=');
+    const m = /SCREEN_ORIENTATION_(\w+)/.exec(out)?.[1];
+    if (!m) return null;
+    if (/PORTRAIT/.test(m)) return 'portrait';
+    if (/LANDSCAPE/.test(m)) return 'landscape';
+    return null;
+  }
+
+  /**
+   * Toggles portrait/landscape and pins it (works with auto-rotate on, unlike a
+   * one-off rotation that the sensor immediately undoes). Android 10+.
+   * Returns whether the screen actually turned.
+   */
+  async rotate(serial: string): Promise<boolean> {
+    const before = await this.rotation(serial);
+    const target = before % 2 === 0 ? 1 : 0;
+    await this.adb.shell(serial, `wm user-rotation lock ${target}`);
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 150));
+      if ((await this.rotation(serial)) !== before) return true;
+    }
+    return false;
+  }
+
   // ---- quick settings ----
 
   async quickSettings(serial: string): Promise<QuickSettings> {

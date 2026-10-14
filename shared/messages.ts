@@ -41,7 +41,9 @@ export type HostMessage =
   | { type: 'surface'; active: boolean }
   /** Recording state; `since` is the start time (ms epoch) or null when not recording. */
   | { type: 'recording'; since: number | null }
-  | { type: 'toggleStats' };
+  | { type: 'toggleStats' }
+  /** Short notice shown over the screen. */
+  | { type: 'toast'; text: string };
 
 /** Toolbar actions handled by the extension host. */
 export type ToolbarAction = 'screenshot' | 'record' | 'menu' | 'pairWifi' | 'showLog';

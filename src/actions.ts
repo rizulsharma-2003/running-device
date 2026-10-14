@@ -29,6 +29,7 @@ export class DeviceActions {
   ) {
     controller.onAction = (msg) => void this.handleWebviewAction(msg);
     controller.onRecordingStopped = (result) => void this.announceRecording(result);
+    controller.onRotate = () => void this.rotate();
   }
 
   register(): vscode.Disposable[] {
@@ -154,6 +155,40 @@ export class DeviceActions {
       await vscode.env.clipboard.writeText(path);
     } else if (choice === 'Copy Image') {
       await copyImageToClipboard(path).catch((err) => vscode.window.showErrorMessage(`Could not copy image: ${errorMessage(err)}`));
+    }
+  }
+
+  // ---- rotation ----
+
+  private rotating = false;
+
+  /** Rotates, then explains if the app in front kept the screen from turning. */
+  async rotate() {
+    const serial = this.controller.activeDeviceId;
+    if (!serial || this.rotating) return;
+    this.rotating = true;
+    try {
+      if ((await this.tools.sdk(serial)) < 29) {
+        // No `wm user-rotation` before Android 10: use the mirror server's rotation.
+        this.controller.sendInput({ type: 'button', button: 'rotate', action: 'press' });
+        return;
+      }
+      // An app pinned to one orientation wins over any rotation request, so say so
+      // right away instead of changing a setting that would surprise later.
+      const [lock, pkg] = await Promise.all([this.tools.orientationLock(serial), this.tools.foregroundApp(serial)]);
+      if (lock) {
+        const last = pkg?.split('.').pop();
+        const app = last ? last[0].toUpperCase() + last.slice(1) : 'This app';
+        this.controller.toast(`${app} is locked to ${lock}, so the screen can't rotate.`);
+        return;
+      }
+      if (!(await this.tools.rotate(serial))) {
+        this.controller.toast("The screen didn't rotate. The current app may not support it.");
+      }
+    } catch (err) {
+      this.controller.toast(`Couldn't rotate: ${errorMessage(err)}`);
+    } finally {
+      this.rotating = false;
     }
   }
 

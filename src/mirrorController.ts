@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { DeviceInfo, HostMessage, VideoCodec, WebviewMessage } from '../shared/messages';
-import type { DeviceBackend, MirrorOptions, MirrorSession } from './backend';
+import type { DeviceBackend, InputMessage, MirrorOptions, MirrorSession } from './backend';
 import { Mp4Recorder } from './recorder';
 
 const POLL_INTERVAL_MS = 2000;
@@ -54,6 +54,8 @@ export class MirrorController implements vscode.Disposable {
 
   /** Set by the extension: handles toolbar actions and drops. */
   onAction: (msg: ActionMessage) => void = () => undefined;
+  /** Handles the rotate button (needs adb, so it lives with the device actions). */
+  onRotate: () => void = () => undefined;
   /** Called when a recording stops without the user asking (rotation, disconnect). */
   onRecordingStopped: (result: RecordingResult) => void = () => undefined;
 
@@ -174,9 +176,14 @@ export class MirrorController implements vscode.Disposable {
         break;
       }
       default:
-        if (surface === this.active) {
-          this.session?.sendInput(msg);
+        if (surface !== this.active) {
+          break;
         }
+        if (msg.type === 'button' && msg.button === 'rotate') {
+          if (msg.action !== 'up') this.onRotate();
+          break;
+        }
+        this.session?.sendInput(msg);
     }
   }
 
@@ -346,6 +353,15 @@ export class MirrorController implements vscode.Disposable {
     this.broadcast({ type: 'recording', since: null });
     const saved = recorder.finish();
     return { path: recorder.path, saved, duration: recorder.duration, reason };
+  }
+
+  /** Sends input straight to the device (used as a fallback by actions). */
+  sendInput(msg: InputMessage) {
+    this.session?.sendInput(msg);
+  }
+
+  toast(text: string) {
+    this.active?.post({ type: 'toast', text });
   }
 
   toggleStats() {

@@ -609,6 +609,33 @@ body.controls-overlay.reveal .handle span {
   display: none;
 }
 
+/* Short notices (e.g. "this app is locked to portrait"). */
+.toast {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 8;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-float);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0;
+  translate: -50% -8px;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease), translate 0.25s var(--ease);
+}
+
+.toast.visible {
+  opacity: 1;
+  translate: -50% 0;
+}
+
 /* ───────────── empty-state card ───────────── */
 
 .card {
