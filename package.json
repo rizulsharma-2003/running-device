@@ -1,7 +1,7 @@
 {
   "name": "running-devices",
   "displayName": "Running Devices",
-  "description": "Mirror, control, record and debug your Android and iOS devices right inside VS Code.",
+  "description": "Your phone, live in VS Code: mirror and control Android and iPhone, hot reload Flutter, record the screen, and read Logcat and crash logs.",
   "version": "0.8.0",
   "publisher": "RizulSharma",
   "license": "MIT",

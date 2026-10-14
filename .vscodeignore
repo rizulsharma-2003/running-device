@@ -13,3 +13,4 @@ CONTRIBUTING.md
 media/logo.svg
 package-lock.json
 native/**
+media/screenshots/**

@@ -1,113 +1,156 @@
-# Running Devices
+<p align="center">
+  <img src="media/icon.png" width="112" alt="Running Devices logo">
+</p>
 
-See and control your Android phone, and watch your iPhone, right inside VS Code. Plug in a device, open the panel, and its live screen appears next to your code. Tap, swipe, scroll and type with your mouse and keyboard.
+<h1 align="center">Running Devices</h1>
 
-No app to install on the phone, and no root.
+<p align="center">
+  <b>Your phone, live inside VS Code.</b><br>
+  Mirror and control Android and iPhone, hot reload Flutter, record, and debug, without leaving your editor.
+</p>
 
-## Getting started
+<p align="center">
+  <a href="https://marketplace.visualstudio.com/items?itemName=RizulSharma.running-devices"><img alt="Version" src="https://img.shields.io/visual-studio-marketplace/v/RizulSharma.running-devices?color=6e5bff&label=marketplace"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=RizulSharma.running-devices"><img alt="Installs" src="https://img.shields.io/visual-studio-marketplace/i/RizulSharma.running-devices?color=18b6d8"></a>
+  <img alt="Platforms" src="https://img.shields.io/badge/devices-Android%20%7C%20iPhone-3fb950">
+</p>
 
-1. Turn on **USB debugging** on your Android device (Settings → About phone → tap *Build number* 7 times, then Settings → Developer options → *USB debugging*).
-2. Connect it with a USB cable and accept the "Allow USB debugging?" prompt on the phone. An emulator works too.
-3. Click the **Running Devices** icon in the VS Code activity bar.
+<p align="center">
+  <img src="media/screenshots/hero.png" width="360" alt="An iPhone mirrored in VS Code with the Flutter bar above it">
+</p>
 
-If only one device is connected, mirroring starts automatically. Otherwise pick one from the dropdown and press the ▶ (Start) button.
+---
 
-## Features
+## Highlights
 
-- **Screenshot** (camera button in the toolbar): saves a full-resolution PNG and opens it in VS Code.
-- **Record screen** (● in the toolbar): records an MP4 with no time limit. Click again to stop; a timer shows while recording.
-- **Install APKs**: drop an `.apk` onto the device screen, or right-click it in the Explorer → *Install APK on Android Device*. Drop any other file to copy it to the phone's Downloads.
-- **Logcat**: colored logs for the app in the foreground, in a VS Code terminal. It keeps following the app when it restarts.
-- **Apps**: launch any installed app, open a deep link (`myapp://…`) to test it, or restart, force stop, clear data and uninstall the current app.
-- **Quick settings**: toggle dark theme, font size, display size, layout bounds, show taps and animation speed without touching the phone.
-- **Wireless**: pair over Wi-Fi by scanning a QR code (Android 11+), or switch a USB-connected phone to Wi-Fi in one click and unplug it.
-- **Performance stats**: live fps, bitrate and resolution over the screen.
+|  |  |
+| --- | --- |
+| 📱 **Android and iPhone, side by side** | Plug in a phone and its screen appears next to your code at up to 60 fps. Emulators work too. |
+| 👆 **Real control** | Click to tap, drag to swipe, scroll, and type straight into the device. |
+| ⚡ **Flutter built in** | Hot reload, hot restart, the widget inspector and DevTools, right above the screen. |
+| 🎬 **Capture** | Full-resolution screenshots and MP4 screen recordings with no time limit. |
+| 🪵 **Logs that survive a kill** | Logcat and the iPhone device log keep running while your app is killed and relaunched, plus crash and kill reports. |
+| 📶 **Wireless** | Pair an Android phone by scanning a QR code, or switch a USB phone to Wi-Fi in one click. |
 
-Everything beyond the toolbar is in the **⋯** menu and in the Command Palette under *Running Devices*.
+Nothing to install on the phone, no root, no account.
 
-## iPhone and iPad (macOS)
+## Get started
 
-Connect an iPhone or iPad to your Mac with a **USB cable**, unlock it, and tap **Trust** if asked. It appears in the device list, mirrored live at up to 60 fps.
+**Android**
 
-- **Touch control (optional):** choose **⋯ → Enable touch control** once. Running Devices builds [WebDriverAgent](https://github.com/appium/WebDriverAgent) (Apple's UI-testing based automation server) with your Apple Development signing and installs it on the iPhone. Then you can click to tap, drag to swipe, and type, and it starts by itself every time you mirror. Needs Xcode, Developer Mode on the iPhone, and trusting your developer app once (Settings → General → VPN & Device Management). Taps land about half a second after the click. With a free Apple ID the signature lasts 7 days; run *Enable touch control* again to renew.
-- Without touch control the iPhone is view-only.
-- **Device log** (⋯ → *Device log: app…*): the iPhone's live log filtered to your app. It keeps running while the app is killed, so you can see what happens when it's launched from a notification or link, and it marks each relaunch. Uses `idevicesyslog`, which comes with the Flutter SDK (or `brew install libimobiledevice`).
-- **Crash & kill reports** (⋯ → *Crash & kill reports…*): why your app died. Lists crashes, CPU-limit and memory kills, and opens a readable summary with the crashing stack.
-- **Screenshots** (full resolution), **screen recording** and the **Flutter bar** work just like on Android.
-- The first time, macOS asks to allow **Camera** access for VS Code. That's how macOS labels iPhone screen capture (QuickTime uses the same permission).
-- Nothing to install on the iPhone. Xcode is optional; when it's installed, the device's iOS version is shown and Flutter sessions are matched to it.
+1. Turn on **USB debugging** (Settings → About phone → tap *Build number* 7 times → Developer options → *USB debugging*).
+2. Connect the phone with a cable and accept the *Allow USB debugging?* prompt.
+3. Click the **Running Devices** icon in the activity bar. With one device connected, mirroring starts on its own.
 
-## Flutter
+**iPhone and iPad** (macOS)
 
-Working on a Flutter app? When it runs on the mirrored device (started from VS Code with the Flutter extension), a **Flutter bar** appears above the screen:
+1. Connect with a **USB cable**, unlock the phone, and tap **Trust** if asked.
+2. Pick it from the device list and press ▶. The first time, macOS asks to allow **Camera** access for VS Code; that's how macOS labels iPhone screen capture (QuickTime uses the same permission).
 
-- **Hot reload** and **Hot restart**, with live status: *Hot reloading…* → *Reloaded in 312 ms*. Hot reloads on save show up too.
+## Flutter, built in
+
+<img src="media/screenshots/flutter.png" width="300" align="right" alt="The Flutter bar showing Reloaded in 312 ms">
+
+When a Flutter app started from VS Code runs on the mirrored device, a **Flutter bar** appears above the screen:
+
+- **Hot reload** and **hot restart** with live status: *Hot reloading…* → *Reloaded in 312 ms*. Reloads on save show up too.
 - **Restart** and **Stop** the app.
 - **Inspect widget**: turn it on, tap any widget on the mirrored screen, and VS Code jumps to its code.
-- **DevTools**, plus debug painting, performance overlay, slow animations and more under **⋯**.
+- **DevTools**, plus debug painting, performance overlay, slow animations and repaint rainbow under **⋯**.
 
-If the app isn't running yet, the bar offers **Run on this device**. It uses your `launch.json` configuration when you have one.
+Not running yet? The bar offers **Run on this device**, using your `launch.json` configuration when you have one.
 
-Requires the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter).
+Works on Android and iPhone. Requires the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter).
+
+<br clear="right">
+
+## iPhone and iPad
+
+<img src="media/screenshots/recording.png" width="300" align="right" alt="An iPhone mirrored while a screen recording is running">
+
+- **Live mirroring** over USB, at the device's native sharpness.
+- **Touch control** (optional): choose **⋯ → Enable touch control** once. Running Devices builds [WebDriverAgent](https://github.com/appium/WebDriverAgent) with your Apple Development signing and installs it on the iPhone; from then on you can tap, swipe and type from VS Code, and it starts by itself whenever you mirror. Needs Xcode and Developer Mode on the iPhone. Taps land about half a second after the click.
+- **Device log** (⋯ → *Device log: app…*): the iPhone's live log for your app. It keeps running while the app is killed, so you can follow a cold start from a notification or a link. Each relaunch is marked.
+- **Crash & kill reports** (⋯ → *Crash & kill reports…*): crashes, CPU-limit kills and memory kills for your app, each with a readable summary and the crashing stack.
+- **Screenshots**, **screen recording** and the **Flutter bar** work just like on Android.
+
+<br clear="right">
+
+## Android toolkit
+
+<img src="media/screenshots/android-menu.png" width="520" alt="The Android actions menu">
+
+Everything is one click away in the **⋯** menu (and in the Command Palette under *Running Devices*):
+
+- **Logcat** for the app in the foreground, in a colored terminal. It follows the app across restarts, so killed-state launches are logged from the first line.
+- **Install APKs** by dropping them on the screen or right-clicking them in the Explorer. Drop any other file to copy it to the phone's Downloads.
+- **Apps**: launch any app, open a **deep link** (`myapp://…`) to test it, or restart, force stop, clear data and uninstall the current app.
+- **Quick settings**: dark theme, font size, display size, layout bounds, show taps and animation speed, without touching the phone.
+- **Wi-Fi**: pair with a QR code (Android 11+), or switch a cabled phone to Wi-Fi and unplug it.
+- **Performance stats**: live fps, bitrate and resolution over the screen.
 
 ## Put it anywhere
 
-Use the buttons in the panel's title bar:
+<img src="media/screenshots/anywhere.png" width="640" alt="The device in a wide panel with the controls beside it">
 
-- **Pop Out to Window** opens the device in its own floating window, which you can place on another monitor.
-- **Open in Editor Tab** shows it as a tab, so you can split it next to your code.
-- **Move View…** (under **⋯**) moves the panel to the Secondary Side Bar (to keep the device on the right of your code), the bottom Panel, or back.
+- **Pop Out to Window** gives the device its own floating window, perfect for a second monitor.
+- **Open in Editor Tab** puts it in a tab you can split next to your code.
+- **Move View…** places the panel in the Secondary Side Bar, the bottom Panel, or back.
 
-Only one place shows the live screen at a time. The others show a **Show here** button to bring it back. Switching doesn't reconnect to the device.
+The screen always gets the most room: the controls sit beside or below the phone only when there's space to spare, and otherwise tuck behind a handle at the bottom edge. Switching places never reconnects to the device.
 
-## Controls
+<img src="media/screenshots/connect.png" width="260" align="right" alt="The connect a device screen">
+
+## Mouse and keyboard
 
 | On your computer | On the device |
 | --- | --- |
 | Click / drag | Tap / swipe |
 | Scroll wheel, trackpad | Scroll |
-| Right-click or Esc | Back |
+| Right-click or Esc | Back (Android) |
 | Typing (click the screen first) | Types into the focused field |
 | Cmd/Ctrl + V | Pastes your clipboard text |
-| Moving the mouse over the screen | Wakes the screen if it's off and keeps it on |
-| Arrows, Enter, Backspace, Tab | The same keys |
+| Hovering over the screen | Wakes the screen and keeps it on |
 
-The toolbar has **Back**, **Home**, **Overview**, **Volume up/down**, **Power** (hold for the power menu), **Rotate** and **Notifications**.
+The control bar has Back, Home, Overview, Volume, Power (hold for the power menu), Rotate and Notifications. On iPhone they map to the matching gestures.
+
+<br clear="right">
 
 ## Requirements
 
-- **adb** from the Android SDK Platform-Tools. It's found automatically if the Android SDK is installed in its default location, or if `adb` is on your `PATH`. Otherwise set `runningDevices.adbPath`.
-- Android 5.0 or newer.
-- For iPhone/iPad: macOS 14 or newer and a USB cable.
+- **Android:** Android 5.0 or newer and `adb` (Android SDK Platform-Tools). It's found automatically in the SDK's default location or on your `PATH`; otherwise set `runningDevices.adbPath`.
+- **iPhone/iPad:** macOS 14 or newer and a USB cable. Xcode is needed for touch control, device logs and crash reports.
 
 ## Settings
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `runningDevices.adbPath` | auto-detect | Path to the adb executable |
+| `runningDevices.adbPath` | auto-detect | Path to `adb` |
 | `runningDevices.maxSize` | `1600` | Longest side of the video in pixels (`0` = full resolution) |
-| `runningDevices.bitRate` | `8000000` | Video bit rate. Lower it on slow USB connections |
+| `runningDevices.bitRate` | `8000000` | Video bit rate. Lower it on slow connections |
 | `runningDevices.maxFps` | `60` | Frame-rate limit |
 | `runningDevices.stayAwake` | `true` | Keep the device awake while mirroring |
 | `runningDevices.autoStart` | `true` | Start automatically when a single device is connected |
 | `runningDevices.wakeOnHover` | `true` | Turn the screen on when the mouse is over it |
-| `runningDevices.captureFolder` | Desktop | Where screenshots and recordings are saved (supports `~` and `${workspaceFolder}`) |
-| `runningDevices.openCaptures` | `true` | Open screenshots and recordings in VS Code after saving |
+| `runningDevices.captureFolder` | Desktop | Where screenshots and recordings go (supports `~` and `${workspaceFolder}`) |
+| `runningDevices.openCaptures` | `true` | Open screenshots and recordings after saving |
 | `runningDevices.logcatLevel` | `V` | Minimum Logcat level: V, D, I, W or E |
+| `runningDevices.idevicesyslogPath` | auto-detect | `idevicesyslog` for the iPhone device log (ships with the Flutter SDK, or `brew install libimobiledevice`) |
 
 ## Troubleshooting
 
-- **"No devices found"**: run `adb devices` in a terminal. If the device shows as `unauthorized`, unlock the phone and accept the USB debugging prompt.
-- **Black or frozen screen**: some devices struggle at high resolutions. Try `runningDevices.maxSize` = `1024`.
-- **Quick settings say the phone blocks changes**: Xiaomi, OPPO, Realme and OnePlus phones need an extra switch in Developer options: *Disable permission monitoring* (OPPO, Realme, OnePlus) or *USB debugging (Security settings)* (Xiaomi). Dark theme and layout bounds work without it.
-- **Wi-Fi pairing doesn't find the phone**: the phone and computer must be on the same network, and some office or guest networks block device discovery. Use *Pair with pairing code* or *Switch USB device to Wi-Fi* instead.
-- **iPhone doesn't appear or stays on "Waiting for video"**: use a cable (not Wi-Fi), unlock the iPhone, and allow Camera access for Visual Studio Code in System Settings → Privacy & Security → Camera.
-- **Anything else**: open **View → Output** and choose **Running Devices** to see the connection log.
+- **No devices found:** run `adb devices` in a terminal. If the phone shows as `unauthorized`, unlock it and accept the USB debugging prompt.
+- **Black or frozen screen:** try `runningDevices.maxSize` = `1024`.
+- **Quick settings say the phone blocks changes:** Xiaomi, OPPO, Realme and OnePlus phones need one more switch in Developer options: *Disable permission monitoring* (OPPO, Realme, OnePlus) or *USB debugging (Security settings)* (Xiaomi).
+- **Wi-Fi pairing doesn't find the phone:** the phone and computer must be on the same network; some office and guest networks block discovery. Use *Pair with pairing code* or *Switch USB device to Wi-Fi* instead.
+- **iPhone stays on "Waiting for video":** use a cable, unlock the iPhone, and allow Camera access for Visual Studio Code in System Settings → Privacy & Security → Camera.
+- **iPhone touch control won't start:** unlock the iPhone, and trust your developer app once in Settings → General → VPN & Device Management.
+- **Anything else:** View → Output → **Running Devices** shows the connection log.
 
-## Coming soon
+## Privacy
 
-iOS Simulator, multiple devices side by side, clipboard sync, and audio forwarding.
+Everything runs on your machine, over your cable or local network. Running Devices has no telemetry and sends nothing anywhere.
 
 ## Credits
 
-Screen capture on the device uses [scrcpy](https://github.com/Genymobile/scrcpy) by Genymobile and Romain Vimont, licensed under Apache 2.0.
+Android screen capture uses [scrcpy](https://github.com/Genymobile/scrcpy) by Genymobile and Romain Vimont (Apache 2.0). iPhone touch control uses [WebDriverAgent](https://github.com/appium/WebDriverAgent) from the Appium project (BSD).
