@@ -4,6 +4,7 @@ import { homedir, tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import * as vscode from 'vscode';
 import { SettingsBlockedError, type DeviceTools } from './android/deviceTools';
+import { devApps, type DevApp, fetchReports, openDeviceLog, renderReport } from './ios/deviceLogs';
 import type { IosBackend } from './ios/iosBackend';
 import { signingTeams, WdaSetupError } from './ios/wdaManager';
 import { openLogcat } from './logcat';
@@ -29,6 +30,7 @@ export class DeviceActions {
     private readonly tools: DeviceTools,
     private readonly extensionUri: vscode.Uri,
     private readonly ios?: IosBackend,
+    private readonly storageDir: string = tmpdir(),
   ) {
     controller.onAction = (msg) => void this.handleWebviewAction(msg);
     controller.onRecordingStopped = (result) => void this.announceRecording(result);
@@ -62,6 +64,8 @@ export class DeviceActions {
       cmd('connectWifi', () => this.connectWifi()),
       cmd('more', () => this.moreMenu()),
       cmd('enableIphoneControl', () => this.enableIphoneControl()),
+      cmd('iosDeviceLog', () => this.iosDeviceLog()),
+      cmd('iosReports', () => this.iosReports()),
     ];
   }
 
@@ -170,6 +174,74 @@ export class DeviceActions {
     } else if (choice === 'Copy Image') {
       await copyImageToClipboard(path).catch((err) => vscode.window.showErrorMessage(`Could not copy image: ${errorMessage(err)}`));
     }
+  }
+
+  // ---- iPhone logs ----
+
+  /** The mirrored iPhone, or a choice of connected ones. Needs the UDID (from Xcode's devicectl). */
+  private async pickIphone(): Promise<{ udid: string; name: string } | undefined> {
+    const ios = this.ios;
+    if (!ios) {
+      void vscode.window.showWarningMessage('iPhone logs need macOS.');
+      return undefined;
+    }
+    const withUdid = this.controller.deviceList
+      .filter((d) => d.platform === 'ios')
+      .map((d) => ({ udid: ios.udidFor(d.id), name: d.name }))
+      .filter((d): d is { udid: string; name: string } => !!d.udid);
+    const active = this.controller.activeDevice;
+    const activeUdid = active?.platform === 'ios' ? ios.udidFor(active.id) : undefined;
+    if (activeUdid) return { udid: activeUdid, name: active!.name };
+    if (!withUdid.length) {
+      void vscode.window.showWarningMessage('Connect an iPhone with a USB cable (Xcode must be installed to identify it).');
+      return undefined;
+    }
+    if (withUdid.length === 1) return withUdid[0];
+    const pick = await vscode.window.showQuickPick(withUdid.map((d) => ({ label: d.name, description: d.udid, d })), { title: 'Which iPhone?' });
+    return pick?.d;
+  }
+
+  /** Your apps on the iPhone, plus "everything". Remembers the last choice. */
+  private async pickIosApp(udid: string, title: string, allLabel: string): Promise<DevApp | null | undefined> {
+    const apps = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Reading apps…' }, () => devApps(udid));
+    const items = [
+      ...apps.map((a) => ({ label: a.name, description: a.bundleId, detail: `process "${a.process}"`, app: a as DevApp | null })),
+      { label: allLabel, description: '', detail: undefined, app: null },
+    ];
+    if (apps.length === 1) return apps[0];
+    const pick = await vscode.window.showQuickPick(items, { title });
+    return pick ? pick.app : undefined;
+  }
+
+  async iosDeviceLog() {
+    const phone = await this.pickIphone();
+    if (!phone) return;
+    const app = await this.pickIosApp(phone.udid, 'Device log for which app?', '$(list-flat) All processes');
+    if (app === undefined) return;
+    openDeviceLog(phone.udid, phone.name, app);
+  }
+
+  async iosReports() {
+    const phone = await this.pickIphone();
+    if (!phone) return;
+    const app = await this.pickIosApp(phone.udid, 'Crash & kill reports for which app?', '$(list-flat) All apps');
+    if (app === undefined) return;
+    const reports = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `Reading reports from ${phone.name}…` },
+      () => fetchReports(phone.udid, this.storageDir, app),
+    );
+    if (!reports.length) {
+      void vscode.window.showInformationMessage(`No crash or kill reports${app ? ` for ${app.name}` : ''} on ${phone.name}.`);
+      return;
+    }
+    const icon: Record<string, string> = { Crash: '$(error)', 'CPU limit': '$(dashboard)', 'Memory kill': '$(database)', Hang: '$(watch)', Report: '$(file)' };
+    const pick = await vscode.window.showQuickPick(
+      reports.map((r) => ({ label: `${icon[r.kind]} ${r.title}`, description: r.time.toLocaleString(), detail: r.kind, r })),
+      { title: `${reports.length} report${reports.length === 1 ? '' : 's'}${app ? ` for ${app.name}` : ''}`, matchOnDetail: true },
+    );
+    if (!pick) return;
+    const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content: renderReport(pick.r) });
+    await vscode.window.showTextDocument(doc, { preview: true });
   }
 
   // ---- iPhone touch control ----
@@ -608,6 +680,9 @@ export class DeviceActions {
           sep('Capture'),
           item('$(device-camera) Take screenshot', 'screenshot', 'full resolution'),
           item(recording ? '$(debug-stop) Stop recording' : '$(record) Record screen', 'toggleRecording'),
+          sep('Logs'),
+          item('$(output) Device log: app…', 'iosDeviceLog', 'keeps logging while the app is killed'),
+          item('$(bug) Crash & kill reports…', 'iosReports', 'why the app died'),
           sep('Control'),
           item(
             this.controller.activeDevice.controls ? '$(debug-restart) Restart touch control' : '$(pointer) Enable touch control…',

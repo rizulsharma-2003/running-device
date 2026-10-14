@@ -31,6 +31,8 @@ Connect an iPhone or iPad to your Mac with a **USB cable**, unlock it, and tap *
 
 - **Touch control (optional):** choose **⋯ → Enable touch control** once. Running Devices builds [WebDriverAgent](https://github.com/appium/WebDriverAgent) (Apple's UI-testing based automation server) with your Apple Development signing and installs it on the iPhone. Then you can click to tap, drag to swipe, and type, and it starts by itself every time you mirror. Needs Xcode, Developer Mode on the iPhone, and trusting your developer app once (Settings → General → VPN & Device Management). Taps land about half a second after the click. With a free Apple ID the signature lasts 7 days; run *Enable touch control* again to renew.
 - Without touch control the iPhone is view-only.
+- **Device log** (⋯ → *Device log: app…*): the iPhone's live log filtered to your app. It keeps running while the app is killed, so you can see what happens when it's launched from a notification or link, and it marks each relaunch. Uses `idevicesyslog`, which comes with the Flutter SDK (or `brew install libimobiledevice`).
+- **Crash & kill reports** (⋯ → *Crash & kill reports…*): why your app died. Lists crashes, CPU-limit and memory kills, and opens a readable summary with the crashing stack.
 - **Screenshots** (full resolution), **screen recording** and the **Flutter bar** work just like on Android.
 - The first time, macOS asks to allow **Camera** access for VS Code. That's how macOS labels iPhone screen capture (QuickTime uses the same permission).
 - Nothing to install on the iPhone. Xcode is optional; when it's installed, the device's iOS version is shown and Flutter sessions are matched to it.

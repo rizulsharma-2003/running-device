@@ -57,6 +57,7 @@ This is the same technique Android Studio's device mirroring and [scrcpy](https:
 | [src/ios/iosBackend.ts](src/ios/iosBackend.ts) | iPhone/iPad backend: device watcher, devicectl lookup, stream sessions |
 | [native/ios-mirror/main.swift](native/ios-mirror/main.swift) | macOS helper: CoreMediaIO screen capture → VideoToolbox H.264 → scrcpy framing on stdout. Rebuild with `npm run build-ios-helper` |
 | [src/ios/wdaManager.ts](src/ios/wdaManager.ts) | iPhone touch control: builds/launches WebDriverAgent, maps mirror input to iOS gestures |
+| [src/ios/deviceLogs.ts](src/ios/deviceLogs.ts) | iPhone device log (idevicesyslog) and crash/kill reports (devicectl) |
 | [src/ios/usbmux.ts](src/ios/usbmux.ts) | usbmuxd client: TCP tunnel to the iPhone over USB |
 | [src/ios/wda.ts](src/ios/wda.ts) | WebDriverAgent HTTP client |
 | [src/videoStream.ts](src/videoStream.ts) | Shared demuxer for the packet framing |

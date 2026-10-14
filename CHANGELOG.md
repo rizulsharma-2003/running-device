@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+
+- **iPhone device log**: a live log terminal for your app on the iPhone that keeps running while the app is killed and relaunched (e.g. opened from a notification), marks every relaunch, and highlights errors and Flutter `print()` output
+- **iPhone crash & kill reports**: pulls the iPhone's diagnostic reports and lists crashes, CPU-limit kills and memory (jetsam) kills for your app, with a readable summary: exception, termination reason and the crashed thread's stack
+
 ## 0.7.0
 
 - **iPhone touch control** (optional): click to tap, drag to swipe or scroll, hold for long-press, and type into the iPhone from VS Code. Toolbar buttons map to iPhone gestures (Back = edge swipe, Overview = app switcher, Home, volume, lock, rotate).

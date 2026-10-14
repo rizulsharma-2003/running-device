@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
   const controller = new MirrorController(backends, output);
   const panel = new DevicePanel(context.extensionUri, controller);
-  const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri, ios);
+  const actions = new DeviceActions(controller, new DeviceTools(adb), context.extensionUri, ios, context.globalStorageUri.fsPath);
   if (ios) ios.onNotice = (text) => controller.toast(text);
   const flutter = new FlutterIntegration(
     () => controller.activeDeviceId,

@@ -2,7 +2,7 @@
   "name": "running-devices",
   "displayName": "Running Devices",
   "description": "Mirror, control, record and debug your Android and iOS devices right inside VS Code.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "RizulSharma",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -209,6 +209,18 @@
         "title": "Enable iPhone Touch Control…",
         "category": "Running Devices",
         "icon": "$(pointer)"
+      },
+      {
+        "command": "runningDevices.iosDeviceLog",
+        "title": "Device Log: iPhone App…",
+        "category": "Running Devices",
+        "icon": "$(output)"
+      },
+      {
+        "command": "runningDevices.iosReports",
+        "title": "iPhone Crash & Kill Reports…",
+        "category": "Running Devices",
+        "icon": "$(bug)"
       }
     ],
     "menus": {
@@ -345,6 +357,11 @@
             "Error"
           ],
           "description": "Minimum log level shown in Logcat."
+        },
+        "runningDevices.idevicesyslogPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to idevicesyslog for iPhone device logs. Leave empty to use Homebrew's or the copy inside the Flutter SDK."
         }
       }
     }

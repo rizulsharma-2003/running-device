@@ -335,6 +335,11 @@ export class MirrorController implements vscode.Disposable {
     return this.activeId;
   }
 
+  /** All known devices (latest poll). */
+  get deviceList(): DeviceInfo[] {
+    return this.devices;
+  }
+
   /** The device being mirrored, with its platform and capabilities. */
   get activeDevice(): DeviceInfo | undefined {
     return this.devices.find((d) => d.id === this.activeId);
