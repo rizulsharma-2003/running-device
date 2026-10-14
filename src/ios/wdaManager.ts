@@ -294,8 +294,12 @@ export class DeviceControl {
       proc.stdout?.on('data', onData);
       proc.stderr?.on('data', onData);
       proc.on('exit', () => {
-        if (!settled) fail(new WdaSetupError(launchFailureReason(output), 'launch'));
-        if (this.proc === proc) {
+        if (!settled) {
+          // A failed launch isn't the end: start() may retry.
+          this.log(`xcodebuild output (last lines):\n${output.split('\n').slice(-12).join('\n')}`);
+          fail(new WdaSetupError(launchFailureReason(output), 'launch'));
+        } else if (this.proc === proc) {
+          // The runner died after working: this control is finished.
           this.ready = false;
           this.closed = true;
         }
@@ -319,6 +323,8 @@ export class DeviceControl {
   }
 
   handle(input: InputMessage) {
+    // Positions are relative to the video; without its size they'd be meaningless.
+    if ((input.type === 'pointer' || input.type === 'scroll') && !(input.width > 0 && input.height > 0)) return;
     switch (input.type) {
       case 'pointer': {
         const p = this.toPoints(input.x, input.y, input.width, input.height);

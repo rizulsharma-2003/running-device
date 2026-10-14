@@ -88,16 +88,20 @@ export class IosBackend implements DeviceBackend {
   async startMirroring(deviceId: string, options: MirrorOptions, events: MirrorEvents): Promise<MirrorSession> {
     const name = this.devices.find((d) => d.captureId === this.captureIdFor(deviceId))?.name ?? 'iPhone';
     const session = await IosSession.start(this.helper, this.captureIdFor(deviceId), name, options, events, this.log);
+    // Look the control up per input: it may be started later (setup, restart) from elsewhere.
+    session.controlFor = () => {
+      const udid = this.details.get(name)?.udid;
+      return udid ? this.wda.control(udid) : undefined;
+    };
     const udid = this.details.get(name)?.udid;
-    if (udid && this.wda.isSetUp) void this.startControl(udid, session);
+    if (udid && this.wda.isSetUp) void this.startControl(udid);
     return session;
   }
 
   /** Starts touch control for a mirrored iPhone (WDA must already be built). */
-  async startControl(udid: string, session?: IosSession) {
+  async startControl(udid: string) {
     try {
-      const control = await this.wda.start(udid);
-      if (session) session.control = control;
+      await this.wda.start(udid);
       this.onNotice('Touch control is on: click to tap, drag to swipe, type to enter text.');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -175,8 +179,8 @@ export class IosBackend implements DeviceBackend {
 }
 
 class IosSession implements MirrorSession {
-  /** Set once WebDriverAgent is ready for this device. */
-  control: DeviceControl | null = null;
+  /** Touch control for this device, if WebDriverAgent is running for it. */
+  controlFor: () => DeviceControl | undefined = () => undefined;
   private disposed = false;
   private stderrLines: string[] = [];
   private snapshotWaiters = new Map<string, (error?: string) => void>();
@@ -245,7 +249,7 @@ class IosSession implements MirrorSession {
       this.proc.stdin?.write('k\n');
       return;
     }
-    this.control?.handle(input);
+    this.controlFor()?.handle(input);
   }
 
   /** Full-resolution PNG straight from the capture (not the scaled stream). */

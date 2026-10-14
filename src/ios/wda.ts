@@ -57,9 +57,19 @@ export class WdaClient {
       const status = await this.call<any>('GET', '/status');
       this.sessionId = status?.sessionId ?? null;
     }
-    // Don't wait for the app to go idle before each action: that's the main source of lag.
     await this.call('POST', this.session('/appium/settings'), {
-      settings: { waitForIdleTimeout: 0, animationCoolOffTimeout: 0, snapshotMaxDepth: 1, mjpegServerFramerate: 1 },
+      settings: {
+        // Don't wait for the app to go idle before each action: the main source of lag.
+        waitForIdleTimeout: 0,
+        animationCoolOffTimeout: 0,
+        snapshotMaxDepth: 1,
+        mjpegServerFramerate: 1,
+        // WDA aims gestures at the "most recent active app", which on iOS is often a
+        // suspended background app (so taps vanish). SpringBoard always covers the
+        // whole screen, and touches are injected system-wide, so they reach whatever
+        // is in front: the home screen or any app.
+        defaultActiveApplication: 'com.apple.springboard',
+      },
     }).catch(() => undefined);
   }
 
