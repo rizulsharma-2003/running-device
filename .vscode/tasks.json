@@ -8,6 +8,13 @@
       "problemMatcher": []
     },
     {
+      "label": "Run Extension (no debugger)",
+      "type": "shell",
+      "command": "\"/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code\" --new-window --extensionDevelopmentPath=\"${workspaceFolder}\"",
+      "dependsOn": "npm: build",
+      "problemMatcher": []
+    },
+    {
       "type": "npm",
       "script": "watch",
       "isBackground": true,
